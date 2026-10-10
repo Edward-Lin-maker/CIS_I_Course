@@ -69,3 +69,6 @@ __pycache__/
 
 
 assignments/assignment1/notebooks/assignment1_solution.ipynb
+
+# Local reference notes
+docs/assignment1_math_reference.md
