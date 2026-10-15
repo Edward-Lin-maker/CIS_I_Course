@@ -67,5 +67,9 @@ __pycache__/
 # VSCode settings/services
 .vscode/
 
+.ipynb_checkpoints/
+
 
 assignments/assignment1/notebooks/assignment1_solution.ipynb
+assignments/assignment2/solution/
+assignments/assignment2/notebooks/assignment2_solution.ipynb
