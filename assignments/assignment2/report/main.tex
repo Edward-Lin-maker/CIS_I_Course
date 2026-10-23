@@ -1,0 +1,72 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,bm}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,longtable,array}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[superscript]{cite}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tocloft}
+\newcommand{\vct}[1]{\bm{#1}}
+\newcommand{\sk}{\operatorname{sk}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\Frame}{\operatorname{Frame}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\Fun}[1]{\operatorname{#1}}
+\newcommand{\norm}[1]{\left\|#1\right\|_2}
+\setcounter{tocdepth}{2}
+\cftpagenumbersoff{section}
+\cftpagenumbersoff{subsection}
+\cftpagenumbersoff{subsubsection}
+\graphicspath{{figures/}}
+
+\begin{document}
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+{\LARGE\bfseries CIS I Assignment 2\\[0.4cm]
+Kinematic Calibration of a Cartesian Robot\par}
+\vspace{1.5cm}
+{\large Fall 2026\par}
+\vfill
+% Team information copied from Assignment 1; update if it changes.
+\begin{tabular}{p{0.28\textwidth}p{0.55\textwidth}}
+Team member name(s): & Zepei Lin, Yue Ge \\[0.8cm]
+Student ID(s): & 3323BF, 7A3BD5 \\[0.8cm]
+Contact information: & \texttt{zlin97@jh.edu}, \texttt{yge29@jh.edu}
+\end{tabular}
+\vfill
+\noindent\fbox{\parbox{0.86\textwidth}{
+\textbf{Academic-integrity statement}\par\medskip
+I (we) have followed the rules in completing this assignment.\par\vspace{1.2cm}
+Signature(s): \hrulefill
+}}
+\vfill
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+\input{sections/01_introduction}
+\input{sections/02_variables}
+\input{sections/03_mathematical_approach}
+\input{sections/04_algorithmic_approach}
+\input{sections/05_program_structure}
+\input{sections/06_validation}
+\input{sections/07_results}
+% A1 also had a final "AI Assistance and Use of Tools" section; add it before submission.
+
+\clearpage
+\begin{thebibliography}{99}
+\bibitem{assignment} R. H. Taylor, \emph{Assignment 2 -- CIS I (601.455/655), Fall 2026}, October 15, 2026, \texttt{2026\_assignment\_2.pdf}.
+\bibitem{repo} LCSR-CIIS, \emph{CIS I Course repository}.
+\url{https://github.com/LCSR-CIIS/CIS_I_Course}.
+\end{thebibliography}
+\end{document}
