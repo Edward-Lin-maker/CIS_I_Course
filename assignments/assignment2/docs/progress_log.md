@@ -45,14 +45,19 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 ---
 
 ## Pending
-- 10-23 17:10 | Claude desktop (Opus 5.5) | docs/course_reference.md | created from Project Context reference (English, 3 parts)
-- 10-23 17:10 | Claude desktop (Opus 5.5) | docs/a1_report.tex | added A1 report LaTeX source (verbatim)
-- 10-23 17:10 | Claude desktop (Opus 5.5) | AGENTS.md | rewrote rules, file index, log/git workflow, progress plan
-- 10-23 17:10 | Claude desktop (Opus 5.5) | docs/progress_log.md | created log with Phase 0 planning record
-- 10-23 17:10 | Claude desktop (Opus 5.5) | report/main.tex | added A2 main file (A1 preamble, A2 title page, section inputs)
-- 10-23 17:10 | Claude desktop (Opus 5.5) | ../../.gitignore | added .DS_Store
 
 ---
 
 ## Commits
-(none logged yet)
+
+### 91ab914 | 2026-10-23 21:20 | "Phase 0: set up docs, rules, log, report skeleton" | pushed
+- Agent: Claude desktop (Opus 5.5)
+- Changes:
+  - docs/course_reference.md: created from Project Context reference (English, 3 parts)
+  - docs/a1_report.tex: added A1 report LaTeX source (verbatim)
+  - AGENTS.md: rewrote rules, file index, log/git workflow, progress plan
+  - docs/progress_log.md: created log with Phase 0 planning record
+  - report/main.tex: added A2 main file (A1 preamble, A2 title page, section inputs)
+  - Note: a Pending entry also recorded `../../.gitignore` (added .DS_Store); that file is outside `assignment2/` and is not part of this commit.
+  - Note: this block was added afterwards in a `log:` commit, since the Pending entries were not merged before the commit.
+- Files: AGENTS.md, docs/a1_report.tex, docs/course_reference.md, docs/progress_log.md, report/main.tex
