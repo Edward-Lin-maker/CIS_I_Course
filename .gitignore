@@ -73,3 +73,9 @@ __pycache__/
 assignments/assignment1/notebooks/assignment1_solution.ipynb
 assignments/assignment2/solution/
 assignments/assignment2/notebooks/assignment2_solution.ipynb
+
+# Track assignment 2 reference materials and report assets
+!/assignments/assignment2/docs/
+!/assignments/assignment2/docs/**
+!/assignments/assignment2/report/
+!/assignments/assignment2/report/**
