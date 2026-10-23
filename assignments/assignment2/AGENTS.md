@@ -11,6 +11,7 @@
 ## 2. 工作准则（必须遵守）
 - 回答用中文。**除本文件外，所有文件一律用英文**（reference、log、报告、代码、注释），保留讲义和题目原文的术语与记号。
 - 代码用 Python（numpy）。回答简洁，先给结论再给推导。
+- 对话中的公式用 Unicode 写在 `代码格式` 里（如 `‖Δa_{m,k}‖ ≤ δ_markers`），不用 `$…$`；LaTeX 只用于 `.tex` 文件。
 - **不得修改 `assignment2/` 以外的任何文件**（包括仓库根目录的 `.gitignore`、`src/`、`assignment1/`），只读可以。
 - **默认只回答问题。** 写 LaTeX、改代码、建立或修改文件、读仓库代码、运行命令，都只在用户明确要求时才做。
 - **先理论后应用。** 先完成理论推导（LaTeX），再做场景设计、标定流程和代码。不要提前设计流程或写代码。
@@ -38,6 +39,7 @@ assignment2/
     └── figures/
 ```
 - A2 的代码从 `../assignment1/src` 导入 Tracker、MarkerBody 等，须保留整个 CIS_I_Course 仓库。
+- 读代码以 `assignment2/src/` 为准：只有 A2 代码显式 import、或题目/代码明说要用时，才追到 `assignment1/src/` 里对应的那部分，并注明出处（A1/A2 文件）；A2 未导入的 A1 代码和常量（如 A1 的 `SENSOR_NOISE_STD = 0.02`）不得当作 A2 的行为。
 - 题目中的函数名在代码里是 snake_case（CreateRobot → simulation.create_robot）。
 - Ground truth（rob.actual_ee_pose、ground_truth_parameters、*_truth、actual_* 等）只能用于验证、调试和报告，不得用于标定。
 
@@ -80,7 +82,8 @@ assignment2/
 ### Current phase commits（Phase 1；阶段完成后压缩进下方一行）
 - dcf54bf | 10-23 | Rules: per-commit list in AGENTS.md section 6; sync hash on fill
 - cd9aad0 | 10-23 | Rules: typo handling via chat confirmation and Part 3.2
-- TBD | 10-23 | Rules: Phase 1 output format (translation + code variable names)
+- fb2aed1 | 10-23 | Rules: Phase 1 output format (translation + code variable names)
+- TBD | 10-23 | Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914

@@ -79,7 +79,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled dcf54bf (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md
 
-### TBD | 2026-10-23 18:34 | "Rules: Phase 1 output format (translation + code variable names)" | not pushed
+### fb2aed1 | 2026-10-23 18:34 | "Rules: Phase 1 output format (translation + code variable names)" | pushed
 - Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
 - Changes:
   - AGENTS.md: section 6 Phase 1 output format: (a) translation of the original text (b) variables of the segment with the matching code names from `src/`; the "issues" item removed (suspected typos still follow section 2)
@@ -87,3 +87,14 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: filled cd9aad0, added TBD line for this commit
   - docs/progress_log.md: filled cd9aad0 (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md
+
+### TBD | 2026-10-23 19:45 | "Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos" | not pushed
+- Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
+- Changes:
+  - AGENTS.md: section 2 rule: formulas in chat are written as Unicode in code spans, LaTeX only in .tex files
+  - AGENTS.md: section 3 rule: read A2 code (`assignment2/src/`) first; follow A1 code only where A2 imports it or the handout/code says so, and cite the source file; A1-only code and constants are not A2 behavior
+  - docs/course_reference.md: 3.1 Tracker API: return values of MostRecentObservedFrame / MostRecentObservedMarkers (tracker frame, last sample, no time cost)
+  - docs/course_reference.md: 3.2 #10 MostRecentObservedMarkers returns b_m,k, not a_m,k; #11 minor p2 notation typos
+  - AGENTS.md: section 6: filled fb2aed1, added TBD line for this commit
+  - docs/progress_log.md: filled fb2aed1 (pushed), added this block
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md

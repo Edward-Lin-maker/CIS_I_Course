@@ -135,7 +135,7 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 - Marker body: mB = DefineMarkerBody({a_m,1, …, a_m,N}). Actual positions a*_m,k = a_m,k + Δa_m,k, ‖Δa_m,k‖ ≤ δ_markers. The estimate can be improved by averaging multiple observations and calling PreviousValues = UpdateMarkerBody(mB, {…}). The simulator keeps using a*_m,k.
 - Measurement: b* = b + ε^trk_sys(b) + ε_b, with ε_b ~ N(0, σ_b² I), ‖ε^trk_sys(b)‖ ≤ δ^trk_sys, ‖∇ε^trk_sys‖ ≤ ω^trk_sys.
 - Placement: PlaceMarkerBody(mB, F_mB) gives F*_mB = ΔF_mB F_mB (left-multiplied), ΔF_mB ≈ Frame(I + sk(α_mB), ε_mB), ‖α_mB‖₂ ≤ δ_mBa, ‖ε_mB‖₂ ≤ δ_mBe.
-- API: trk = CreateTracker(F, {mB…}); AddMarkerBodies / RemoveMarkerBodies(trk, {…}); {F1…FN} = SampleMarkerBodies(trk) (costs Δt_samp per call); MostRecentObservedFrame(mB); MostRecentObservedMarkers(mB).
+- API: trk = CreateTracker(F, {mB…}); AddMarkerBodies / RemoveMarkerBodies(trk, {…}); {F1…FN} = SampleMarkerBodies(trk) (costs Δt_samp per call); F_m = MostRecentObservedFrame(mB) (body pose relative to the tracker); {b_m,1, …, b_m,N} = MostRecentObservedMarkers(mB) (individual marker readings, tracker frame; the handout writes a here, see 3.2 #10). Both return the last SampleMarkerBodies result and cost no time.
 - Typical values: σ_Ta = 0.01, σ_Tp = 5 mm (set to 0 here); σ_b = 0.1 mm; Δt_samp = 0.03 s; δ^trk_sys ≤ 0.1 mm; ω^trk_sys ≤ 7.5×10⁻⁴. δ_markers, δ_mBa and δ_mBe are not specified in the handout.
 
 ### The Robot — kinematics and errors (p3)
@@ -221,6 +221,8 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 7. p1: the volume is called "tetrahedral", but Figure 2 shows a truncated pyramid.
 8. Parameter table: σ_k,sys (0.01 mm / 0.001 rad) is listed, but the error model uses δ and ω only; its role is unclear.
 9. Not specified in the handout: t_settle, δ_markers, δ_mBa, δ_mBe (check `src/simulation/constants.py`).
+10. p2: {a_m.1, …, a_m,N} = MostRecentObservedMarkers(mB) → {b_m,1, …, b_m,N}. The function returns the observed marker positions in the tracker frame, not the body-frame a_m,k (A2 `src/simulation/marker_body.py` docstring says b). To get body-frame values, compute F_m⁻¹ b_m,k yourself.
+11. p2 minor notation (no effect on the math): a_m.1 → a_m,1; "estimate of a_m,b" → a_m,k; F_mb, α_mb, ε_mb → F_mB, α_mB, ε_mB; stray "−" in "ω^trk_sys − ≤ 7.5×10⁻⁴".
 
 ## 3.3 Working understanding (preliminary; confirm during line-by-line reading)
 - Actual model, assembled from p3 (not written as one line in the handout): F*_ee(θ) = F*_c(θ*_1..3; d*_1..3) F_cw F*_w(θ*_4..6; n*_4..6) F*_we. F_cw is assumed exact because the handout lists no error for it.
