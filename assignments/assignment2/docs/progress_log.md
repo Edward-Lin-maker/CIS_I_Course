@@ -71,10 +71,19 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/progress_log.md
 
-### TBD | 2026-10-23 17:57 | "Rules: typo handling via chat confirmation and Part 3.2" | not pushed
+### cd9aad0 | 2026-10-23 17:57 | "Rules: typo handling via chat confirmation and Part 3.2" | pushed
 - Agent: Claude desktop (Opus 5.5)
 - Changes:
   - AGENTS.md: section 2: suspected typos are raised in chat first, then recorded in course_reference.md Part 3.2 as one line (original -> corrected) after user confirmation
   - AGENTS.md: section 6: filled dcf54bf, added TBD line for this commit
   - docs/progress_log.md: filled dcf54bf (pushed), added this block
+- Files: AGENTS.md, docs/progress_log.md
+
+### TBD | 2026-10-23 18:34 | "Rules: Phase 1 output format (translation + code variable names)" | not pushed
+- Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
+- Changes:
+  - AGENTS.md: section 6 Phase 1 output format: (a) translation of the original text (b) variables of the segment with the matching code names from `src/`; the "issues" item removed (suspected typos still follow section 2)
+  - AGENTS.md: section 6 Phase 1: the LaTeX variable table is written to `report/sections/02_variables.tex` only on user request
+  - AGENTS.md: section 6: filled cd9aad0, added TBD line for this commit
+  - docs/progress_log.md: filled cd9aad0 (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md

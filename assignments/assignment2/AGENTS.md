@@ -64,7 +64,8 @@ assignment2/
 ### Plan（只展开当前阶段；后续阶段的已定细节见 progress_log 的 Phase 0 planning record）
 - [x] Phase 0 Setup（文件结构、reference、规则、日志流程）
 - [ ] **Phase 1 Line-by-line reading**（当前阶段）——每次读一段，用户确认后再读下一段
-  - 每段输出：(a) 原文要点忠实复述，不加推断 (b) 本段变量 (c) 疑点（笔误、不一致、未给数值）
+  - 每段输出：(a) 原文翻译 (b) 本段变量（含代码变量名，需查 `src/` 对应）
+  - LaTeX 变量表仅在用户要求时写入 `report/sections/02_variables.tex`
   - [ ] Seg 1 Scenario (p1)
   - [ ] Seg 2 The Tracker (p1–3)
   - [ ] Seg 3 The Robot: kinematics & errors (p3)
@@ -78,7 +79,8 @@ assignment2/
 
 ### Current phase commits（Phase 1；阶段完成后压缩进下方一行）
 - dcf54bf | 10-23 | Rules: per-commit list in AGENTS.md section 6; sync hash on fill
-- TBD | 10-23 | Rules: typo handling via chat confirmation and Part 3.2
+- cd9aad0 | 10-23 | Rules: typo handling via chat confirmation and Part 3.2
+- TBD | 10-23 | Rules: Phase 1 output format (translation + code variable names)
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
