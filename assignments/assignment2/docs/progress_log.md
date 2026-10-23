@@ -61,3 +61,12 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - Note: a Pending entry also recorded `../../.gitignore` (added .DS_Store); that file is outside `assignment2/` and is not part of this commit.
   - Note: this block was added afterwards in a `log:` commit, since the Pending entries were not merged before the commit.
 - Files: AGENTS.md, docs/a1_report.tex, docs/course_reference.md, docs/progress_log.md, report/main.tex
+
+### TBD | 2026-10-23 17:42 | "Rules: per-commit list in AGENTS.md section 6; sync hash on fill" | not pushed
+- Agent: Claude desktop (Opus 5.5)
+- Changes:
+  - AGENTS.md: section 5 step 1 and the `log: fill hash` rule now also replace the matching `TBD` in section 6 "Current phase commits" with the hash
+  - AGENTS.md: section 5 step 3 now appends `- TBD | MM-DD | <commit message>` to "Current phase commits"; a completed phase is compressed to one line in Completed phases listing only hashes (details in this log)
+  - AGENTS.md: section 6 split into Plan (tasks only; Phase 1 output requirements moved above the Seg list), a new "Current phase commits" subsection, and Completed phases; Phase 0 line changed from `commit: see progress_log (first block)` to `commits: 91ab914`
+  - docs/progress_log.md: added this block
+- Files: AGENTS.md, docs/progress_log.md

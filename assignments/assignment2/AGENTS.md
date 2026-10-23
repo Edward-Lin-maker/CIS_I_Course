@@ -52,32 +52,35 @@ assignment2/
 - **开始工作前**：先 `git pull`（可能在多台电脑上协作）。
 - **每次修改文件后**（仅限用户允许的修改）：在 `docs/progress_log.md` 的 `## Pending` 区末尾追加一行：`- MM-DD HH:MM | <agent (model)> | <files> | <brief change>`。追加时不需要读整个文件。
 - **每次 commit 之前**（用户说"更新 log"，或让 agent 代为 commit 时）：
-  1. 在 Commits 区找到最后一个号为 `TBD` 的块，用 `git log -1 --format='%h %ad %s'` 等命令查出它对应的 commit，补上号；用 `git log origin/assignment2..HEAD` 判断各块是否已 push，并更新状态。
+  1. 在 Commits 区找到最后一个号为 `TBD` 的块，用 `git log -1 --format='%h %ad %s'` 等命令查出它对应的 commit，补上号，同时把第 6 节 Current phase commits 里对应的 `TBD` 改成该 hash；用 `git log origin/assignment2..HEAD` 判断各块是否已 push，并更新状态。
   2. 新建一个块，号写 `TBD`，把 Pending 里的条目归并进去，然后清空 Pending。
-  3. 更新本文件第 6 节。
+  3. 更新本文件第 6 节：在 Current phase commits 小节末尾追加一行 `- TBD | MM-DD | <commit message>`，并勾选已完成的项。阶段完成时，把该小节压缩成 Completed phases 里的一行，只列 hash，详情查 log。
   4. 日志、本文件和工作改动放进同一个 commit 一起提交。
 - 块的格式：`### <hash|TBD> | YYYY-MM-DD HH:MM | "<commit message>" | <pushed|not pushed|—>`，下面写 Agent、Changes、Files。
-- 只有在最后一次提交之后，才单独提交一个 `log: fill hash for <hash>` 来补上最后一个号；`log:` 开头的 commit 不记入日志。
+- 只有在最后一次提交之后，才单独提交一个 `log: fill hash for <hash>` 来补上最后一个号（同时把第 6 节里对应的 `TBD` 改成该 hash）；`log:` 开头的 commit 不记入日志。
 - 只暂存 `assignment2/` 下的文件，不要提交 `src/.DS_Store` 等外部文件。
 
 ## 6. Progress
 ### Plan（只展开当前阶段；后续阶段的已定细节见 progress_log 的 Phase 0 planning record）
 - [x] Phase 0 Setup（文件结构、reference、规则、日志流程）
 - [ ] **Phase 1 Line-by-line reading**（当前阶段）——每次读一段，用户确认后再读下一段
+  - 每段输出：(a) 原文要点忠实复述，不加推断 (b) 本段变量 (c) 疑点（笔误、不一致、未给数值）
   - [ ] Seg 1 Scenario (p1)
   - [ ] Seg 2 The Tracker (p1–3)
   - [ ] Seg 3 The Robot: kinematics & errors (p3)
   - [ ] Seg 4 The Robot: functions, homing, motion, CreateRobot, parameters (p4–5)
   - [ ] Seg 5 Calibration marker body mBee (p5)
   - [ ] Seg 6 Problem and a few hints (p5–7)
-  - 每段输出：(a) 原文要点忠实复述，不加推断 (b) 本段变量 (c) 疑点（笔误、不一致、未给数值）
 - [ ] Phase 2 Variable table（→ report/sections/02_variables.tex）
 - [ ] Phase 3 Theory（→ 03_mathematical_approach.tex）
 - [ ] Phase 4 Design & code（src/student/、unit tests）
 - [ ] Phase 5 Results & report（多 seed 结果表、其余章节）
 
+### Current phase commits（Phase 1；阶段完成后压缩进下方一行）
+- TBD | 10-23 | Rules: per-commit list in AGENTS.md section 6; sync hash on fill
+
 ### Completed phases
-- Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commit: see progress_log (first block)
+- Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
 
 ## 7. 其他
 - 命名：全小写、下划线分隔，不用空格和中文。
