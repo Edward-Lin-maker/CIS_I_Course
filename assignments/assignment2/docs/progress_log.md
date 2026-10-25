@@ -99,10 +99,20 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled fb2aed1 (pushed), added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md
 
-### TBD | 2026-10-25 14:57 | "Rules: report holds only content that fits its logic" | not pushed
+### 57a2718 | 2026-10-25 14:57 | "Rules: report holds only content that fits its logic" | pushed
 - Agent: Claude desktop (Opus 5.5)
 - Changes:
   - AGENTS.md: section 2 rule: report contains only content that fits its logic; chat Q&A and clarifications are not written into it; handout typos only when they affect derivation or implementation
   - AGENTS.md: section 6: filled fddae14, added TBD line for this commit
   - docs/progress_log.md: filled fddae14 (pushed), added this block
+- Files: AGENTS.md, docs/progress_log.md
+
+### TBD | 2026-10-25 16:42 | "Rules: look up local repo before inferring; remote course repo only on request" | not pushed
+- Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
+- Changes:
+  - AGENTS.md: section 3 rule: content not given in the handout (usage, workflow, values) is looked up in the local repo without asking: A2 `src/`, `notebooks/`, `tests/`, `README.md` first, then the whole local CIS_I_Course repo (parts not imported by A2 are reference only); answers state whether each item comes from the handout or from code (file name); inference only if nothing is found, labeled as such
+  - AGENTS.md: section 3 rule: the remote course repo (github.com/LCSR-CIIS/CIS_I_Course) is checked only on user request, e.g. to compare with the original version of a locally modified file
+  - AGENTS.md: section 2: the "only answer by default" rule now names the local-repo lookup as an exception
+  - AGENTS.md: section 6: filled 57a2718, added TBD line for this commit
+  - docs/progress_log.md: filled 57a2718 (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md

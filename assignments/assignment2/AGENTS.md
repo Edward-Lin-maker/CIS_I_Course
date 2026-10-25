@@ -13,7 +13,7 @@
 - 代码用 Python（numpy）。回答简洁，先给结论再给推导。
 - 对话中的公式用 Unicode 写在 `代码格式` 里（如 `‖Δa_{m,k}‖ ≤ δ_markers`），不用 `$…$`；LaTeX 只用于 `.tex` 文件。
 - **不得修改 `assignment2/` 以外的任何文件**（包括仓库根目录的 `.gitignore`、`src/`、`assignment1/`），只读可以。
-- **默认只回答问题。** 写 LaTeX、改代码、建立或修改文件、读仓库代码、运行命令，都只在用户明确要求时才做。
+- **默认只回答问题。** 写 LaTeX、改代码、建立或修改文件、读仓库代码、运行命令，都只在用户明确要求时才做。例外：原文没写的内容可直接查本地仓库，不必另行请求（见第 3 节）。
 - **先理论后应用。** 先完成理论推导（LaTeX），再做场景设计、标定流程和代码。不要提前设计流程或写代码。
 - 节省 token：只读当前任务需要的文件或章节，不要整篇读报告或整份 PDF；需要公式或参数时先查 `docs/course_reference.md`。
 - 忠实原文：题目要求以 `docs/2026_assignment_2.pdf` 为准；原文未给的数值写 "not specified"；原文的笔误和不一致保留原写法并单独标注，不擅自修正。
@@ -41,6 +41,8 @@ assignment2/
 ```
 - A2 的代码从 `../assignment1/src` 导入 Tracker、MarkerBody 等，须保留整个 CIS_I_Course 仓库。
 - 读代码以 `assignment2/src/` 为准：只有 A2 代码显式 import、或题目/代码明说要用时，才追到 `assignment1/src/` 里对应的那部分，并注明出处（A1/A2 文件）；A2 未导入的 A1 代码和常量（如 A1 的 `SENSOR_NOISE_STD = 0.02`）不得当作 A2 的行为。
+- 原文没写的内容（用法、流程、数值等）直接查本地仓库，不必另行请求：先查 A2 的 `src/`、`notebooks/`、`tests/`、`README.md`，找不到再查本地整个 CIS_I_Course 仓库（A2 未导入的部分只作参考，按上一条处理）。回答中注明每条来自题目原文还是代码（写文件名）；都找不到时才可推断，并明确标为推断。
+- 课程远程仓库 https://github.com/LCSR-CIIS/CIS_I_Course/tree/main 只在用户明确要求时才查（如对照本地文件被修改前的原始版本）。
 - 题目中的函数名在代码里是 snake_case（CreateRobot → simulation.create_robot）。
 - Ground truth（rob.actual_ee_pose、ground_truth_parameters、*_truth、actual_* 等）只能用于验证、调试和报告，不得用于标定。
 
@@ -85,7 +87,8 @@ assignment2/
 - cd9aad0 | 10-23 | Rules: typo handling via chat confirmation and Part 3.2
 - fb2aed1 | 10-23 | Rules: Phase 1 output format (translation + code variable names)
 - fddae14 | 10-23 | Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos
-- TBD | 10-25 | Rules: report holds only content that fits its logic
+- 57a2718 | 10-25 | Rules: report holds only content that fits its logic
+- TBD | 10-25 | Rules: look up local repo before inferring; remote course repo only on request
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
