@@ -107,7 +107,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled fddae14 (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md
 
-### TBD | 2026-10-25 16:42 | "Rules: look up local repo before inferring; remote course repo only on request" | not pushed
+### dc3ef9b | 2026-10-25 16:42 | "Rules: look up local repo before inferring; remote course repo only on request" | pushed
 - Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
 - Changes:
   - AGENTS.md: section 3 rule: content not given in the handout (usage, workflow, values) is looked up in the local repo without asking: A2 `src/`, `notebooks/`, `tests/`, `README.md` first, then the whole local CIS_I_Course repo (parts not imported by A2 are reference only); answers state whether each item comes from the handout or from code (file name); inference only if nothing is found, labeled as such
@@ -116,3 +116,13 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: filled 57a2718, added TBD line for this commit
   - docs/progress_log.md: filled 57a2718 (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md
+
+### TBD | 2026-10-25 18:37 | "Rules: Part 3.5 notation only; reference: handout issues #8-17 (p3-5)" | not pushed
+- Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
+- Changes:
+  - AGENTS.md: section 2 rule: Part 3.5 of course_reference.md holds notation only (symbols, meaning, code variables); derivations stay in LaTeX
+  - docs/course_reference.md: Part 3.2 revised #8 (σ/δ/ω_sys missing from the CreateRobot signature; σ_sys role from code) and #9 (code values for unspecified items)
+  - docs/course_reference.md: Part 3.2 added #12-17 (F*_rob formula, CommandedPose argument, speed-limit product, F_mBee meanings, Figure 1 F_ce/F_c, p3-5 minor typos)
+  - AGENTS.md: section 6: filled dc3ef9b, added TBD line for this commit
+  - docs/progress_log.md: filled dc3ef9b (pushed), added this block
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md
