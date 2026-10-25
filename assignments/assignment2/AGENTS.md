@@ -18,6 +18,7 @@
 - 节省 token：只读当前任务需要的文件或章节，不要整篇读报告或整份 PDF；需要公式或参数时先查 `docs/course_reference.md`。
 - 忠实原文：题目要求以 `docs/2026_assignment_2.pdf` 为准；原文未给的数值写 "not specified"；原文的笔误和不一致保留原写法并单独标注，不擅自修正。
 - 撰写报告的 notation 或 math 时，同步更新 `course_reference.md` 的 Part 3.5。发现原文疑似笔误：先在对话中提出并给出建议改法，用户确认后记入 `course_reference.md` Part 3.2（原文 → 改为，一行）。
+- 报告只写符合报告逻辑的内容（问题、方法、推导、假设、结果）。对话中的问答、澄清和讨论过程不写进报告，也不为此加脚注或强调性说明；原文笔误只在影响推导或实现时才在报告中简要说明。
 
 ## 3. 文件索引
 ```
@@ -83,7 +84,8 @@ assignment2/
 - dcf54bf | 10-23 | Rules: per-commit list in AGENTS.md section 6; sync hash on fill
 - cd9aad0 | 10-23 | Rules: typo handling via chat confirmation and Part 3.2
 - fb2aed1 | 10-23 | Rules: Phase 1 output format (translation + code variable names)
-- TBD | 10-23 | Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos
+- fddae14 | 10-23 | Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos
+- TBD | 10-25 | Rules: report holds only content that fits its logic
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914

@@ -88,7 +88,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled cd9aad0 (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md
 
-### TBD | 2026-10-23 19:45 | "Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos" | not pushed
+### fddae14 | 2026-10-23 19:45 | "Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos" | pushed
 - Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
 - Changes:
   - AGENTS.md: section 2 rule: formulas in chat are written as Unicode in code spans, LaTeX only in .tex files
@@ -98,3 +98,11 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: filled fb2aed1, added TBD line for this commit
   - docs/progress_log.md: filled fb2aed1 (pushed), added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md
+
+### TBD | 2026-10-25 14:57 | "Rules: report holds only content that fits its logic" | not pushed
+- Agent: Claude desktop (Opus 5.5)
+- Changes:
+  - AGENTS.md: section 2 rule: report contains only content that fits its logic; chat Q&A and clarifications are not written into it; handout typos only when they affect derivation or implementation
+  - AGENTS.md: section 6: filled fddae14, added TBD line for this commit
+  - docs/progress_log.md: filled fddae14 (pushed), added this block
+- Files: AGENTS.md, docs/progress_log.md
