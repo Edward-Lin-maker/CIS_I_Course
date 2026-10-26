@@ -189,7 +189,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, tests/test_student.py
 
-### TBD | 2026-10-26 17:08 | "Report: Sections 4-7 (algorithm, program structure, validation, results)" | not pushed
+### 86379d8 | 2026-10-26 17:08 | "Report: Sections 4-7 (algorithm, program structure, validation, results)" | not pushed
 - Agent: Claude Code (Opus 5.5), branch assignment2-gy
 - Changes:
   - report/sections/04_algorithmic_approach.tex: Algorithmic Approach: scene design (incl. why no other marker body), homing, pose planning (knots, readings per stop, single-axis sweeps from theta = 0 and why, visibility margin, concurrent variant), data collection, decoupled initial estimate, weighted least-squares fit, rotation about d_1 chosen from the handout bounds (seven null directions, six removed by homing), improved FwdK/InvK, tracker-frame evaluation, execution-flow figure
