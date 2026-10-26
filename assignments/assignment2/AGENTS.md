@@ -12,7 +12,7 @@
 - 回答用中文。**除本文件外，所有文件一律用英文**（reference、log、报告、代码、注释），保留讲义和题目原文的术语与记号。
 - 代码用 Python（numpy）。回答简洁，先给结论再给推导。
 - 对话中的公式用 Unicode 写在 `代码格式` 里（如 `‖Δa_{m,k}‖ ≤ δ_markers`），不用 `$…$`；LaTeX 只用于 `.tex` 文件。
-- **不得修改 `assignment2/` 以外的任何文件**（包括仓库根目录的 `.gitignore`、`src/`、`assignment1/`），只读可以。
+- **不得修改 `assignment2/` 以外的任何文件**（包括仓库根目录的 `.gitignore`、`src/`、`assignment1/`），只读可以。唯一例外：根 `.gitignore` 中忽略 `report/build/` 的一行（用户同意）。
 - **默认只回答问题。** 写 LaTeX、改代码、建立或修改文件、读仓库代码、运行命令，都只在用户明确要求时才做。例外：原文没写的内容可直接查本地仓库，不必另行请求（见第 3 节）。
 - **先理论后应用。** 先完成理论推导（LaTeX），再做场景设计、标定流程和代码。不要提前设计流程或写代码。
 - 节省 token：只读当前任务需要的文件或章节，不要整篇读报告或整份 PDF；需要公式或参数时先查 `docs/course_reference.md`。
@@ -54,7 +54,7 @@ assignment2/
 - 题目 p3 中 F*_we 的误差符号与 p5 精度指标的 ΔF_ee 同名，报告里前者记为 ΔF_we。
 
 ## 5. 日志与 Git 流程
-- **开始工作前**：先 `git pull`（可能在多台电脑上协作）。
+- **开始工作前**：先 `git pull`（可能在多台电脑上协作），并检查本机工具（见第 7 节）。
 - **每次修改文件后**（仅限用户允许的修改）：在 `docs/progress_log.md` 的 `## Pending` 区末尾追加一行：`- MM-DD HH:MM | <agent (model)> | <files> | <brief change>`。追加时不需要读整个文件。
 - **每次 commit 之前**（用户说"更新 log"，或让 agent 代为 commit 时）：
   1. 在 Commits 区找到最后一个号为 `TBD` 的块，用 `git log -1 --format='%h %ad %s'` 等命令查出它对应的 commit，补上号，同时把第 6 节 Current phase commits 里对应的 `TBD` 改成该 hash；用 `git log origin/assignment2..HEAD` 判断各块是否已 push，并更新状态。
@@ -63,38 +63,26 @@ assignment2/
   4. 日志、本文件和工作改动放进同一个 commit 一起提交。
 - 块的格式：`### <hash|TBD> | YYYY-MM-DD HH:MM | "<commit message>" | <pushed|not pushed|—>`，下面写 Agent、Changes、Files。
 - 只有在最后一次提交之后，才单独提交一个 `log: fill hash for <hash>` 来补上最后一个号（同时把第 6 节里对应的 `TBD` 改成该 hash）；`log:` 开头的 commit 不记入日志。
-- 只暂存 `assignment2/` 下的文件，不要提交 `src/.DS_Store` 等外部文件。
+- 只暂存 `assignment2/` 下的文件（以及上述根 `.gitignore` 例外），不要提交 `src/.DS_Store` 等外部文件。
 
 ## 6. Progress
 ### Plan（只展开当前阶段；后续阶段的已定细节见 progress_log 的 Phase 0 planning record）
 - [x] Phase 0 Setup（文件结构、reference、规则、日志流程）
-- [ ] **Phase 1 Line-by-line reading**（当前阶段）——每次读一段，用户确认后再读下一段
-  - 每段输出：(a) 原文翻译 (b) 本段变量（含代码变量名，需查 `src/` 对应）
-  - LaTeX 变量表仅在用户要求时写入 `report/sections/02_variables.tex`
-  - [ ] Seg 1 Scenario (p1)
-  - [ ] Seg 2 The Tracker (p1–3)
-  - [ ] Seg 3 The Robot: kinematics & errors (p3)
-  - [ ] Seg 4 The Robot: functions, homing, motion, CreateRobot, parameters (p4–5)
-  - [ ] Seg 5 Calibration marker body mBee (p5)
-  - [ ] Seg 6 Problem and a few hints (p5–7)
-- [ ] Phase 2 Variable table（→ report/sections/02_variables.tex）
+- [x] Phase 1 Line-by-line reading（Seg 1–6）
+- [ ] **Phase 2 Variable table**（当前阶段）→ `report/sections/02_variables.tex`：五张表初稿已完成，待用户审阅
 - [ ] Phase 3 Theory（→ 03_mathematical_approach.tex）
 - [ ] Phase 4 Design & code（src/student/、unit tests）
 - [ ] Phase 5 Results & report（多 seed 结果表、其余章节）
 
-### Current phase commits（Phase 1；阶段完成后压缩进下方一行）
-- dcf54bf | 10-23 | Rules: per-commit list in AGENTS.md section 6; sync hash on fill
-- cd9aad0 | 10-23 | Rules: typo handling via chat confirmation and Part 3.2
-- fb2aed1 | 10-23 | Rules: Phase 1 output format (translation + code variable names)
-- fddae14 | 10-23 | Rules: Unicode formulas in chat, A2-first code reading; reference: tracker API and p2 typos
-- 57a2718 | 10-25 | Rules: report holds only content that fits its logic
-- dc3ef9b | 10-25 | Rules: look up local repo before inferring; remote course repo only on request
-- TBD | 10-25 | Rules: Part 3.5 notation only; reference: handout issues #8-17 (p3-5)
+### Current phase commits（Phase 2；阶段完成后压缩进下方一行）
+- TBD | 10-25 | Phase 2: Variables and Notation section; local LaTeX build with tectonic
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
+- Phase 1 Line-by-line reading | 2026-10-23 ~ 10-25 | Claude Code / Claude desktop (Opus 5.5) | commits: dcf54bf, cd9aad0, fb2aed1, fddae14, 57a2718, dc3ef9b, 7c01a97
 
 ## 7. 其他
 - 命名：全小写、下划线分隔，不用空格和中文。
 - Git：在 assignment2 分支上工作；origin 是个人 fork，upstream 是课程仓库。
-- LaTeX 预览：本地 MacTeX + VS Code 的 LaTeX Workshop。
+- 本机工具（macOS，Homebrew）：poppler（`pdftoppm`/`pdftotext`，读 PDF 页面和图）、tectonic（编译 LaTeX）。开始工作时用 `which pdftoppm tectonic` 检查；缺失则请用户运行 `brew install poppler tectonic`，agent 不自行安装。
+- LaTeX 编译：每次修改 LaTeX 后，agent 自行在 `report/` 下运行 `mkdir -p build && tectonic --keep-logs --outdir build main.tex`，修掉错误和 Overfull 后，在侧边文件面板打开 `report/build/main.pdf` 给用户看。`report/build/` 由根 `.gitignore` 忽略（写在 `!/assignments/assignment2/report/**` 之后）。用户也可用 VS Code 的 LaTeX Workshop（需 MacTeX）。

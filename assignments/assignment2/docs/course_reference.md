@@ -246,4 +246,12 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 - Noise: σ_b = 0.1 mm; use many markers and repeated samples (σ/√n). Sampling is cheap (0.03 s); motion dominates the time (600 mm takes ≥ 12 s).
 
 ## 3.5 Report notation / math progress (updated while writing)
-- (empty — fill after the line-by-line reading and derivations)
+Source: `report/sections/02_variables.tex` (notation only; derivations stay in LaTeX).
+- Marks: unmarked = nominal; * = actual (hidden); leading subscript `obs` = tracker output, `est` = our calibration result; stage labels `bl` (baseline), `init` (initial value), `est` (final). Index j = calibration sample (one move + one reading), k = joint or marker.
+- Frames: workspace, {trk}, {rob} (base), {c} (after the linear stages), {w} (wrist center), {e} (end-effector). F_{x,y} = pose of y relative to x. Single-subscript poses keep the handout meaning (F_tracker, F_rob, F_mB relative to the workspace; F_m relative to the tracker).
+- mBee coincides with {e}: base-relative poses are written F_ee in every version; the subscript mBee is used only relative to the tracker. Handout F_mBee (p5) = F_ee. Tool-mounting error ΔF_ee(η_ee) (p3) is written ΔF_we, with α_we, ε_we.
+- Measurements: b_{obs,k,j} (`obs["mBee"].markers[k]`), F_{obs,trk,mBee,j} (`data.frames[j]`); actual b*_{k,j}, F*_{trk,mBee}(θ_j) (validation only).
+- Base relative to the tracker: F*_{trk,rob} = F_tracker⁻¹ F*_rob (validation only); F_{bl,trk,rob} (`F_X_baseline`); F_{init,trk,rob,j} (local to `estimate_base_frame`); F_{init,trk,rob} (`F_X_nom` = `improved.F_X_init`); F_{est,trk,rob} (`improved.base_frame()`).
+- Calibrated model: φ_{est,k}, Δθ_{est,k,sys}(θ_k), ΔF_{est,we} (`improved.params`, `parameters_report()`); F_{est,ee}(θ) = ImprovedFwdKins (`improved.fwd_kins`).
+- Accuracy: ΔF_FwdK = (F*_ee)⁻¹ F_{est,ee}; ΔF_InvK between target and reached pose; both via `metrics.frame_error`.
+- Code-only state: θ = `rob.theta_cmd` (encoder = command), θ* = `rob._theta_star`, θ_home = return of `home_robot()` (handout θ_encoders), t_elap = `clock.elapsed`.

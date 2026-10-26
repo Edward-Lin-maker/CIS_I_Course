@@ -117,7 +117,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled 57a2718 (pushed), added this block
 - Files: AGENTS.md, docs/progress_log.md
 
-### TBD | 2026-10-25 18:37 | "Rules: Part 3.5 notation only; reference: handout issues #8-17 (p3-5)" | not pushed
+### 7c01a97 | 2026-10-25 18:37 | "Rules: Part 3.5 notation only; reference: handout issues #8-17 (p3-5)" | pushed
 - Agent: Claude Code (Opus 5.5); Claude desktop (Opus 5.5) for log/commit
 - Changes:
   - AGENTS.md: section 2 rule: Part 3.5 of course_reference.md holds notation only (symbols, meaning, code variables); derivations stay in LaTeX
@@ -126,3 +126,15 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: filled dc3ef9b, added TBD line for this commit
   - docs/progress_log.md: filled dc3ef9b (pushed), added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md
+
+### TBD | 2026-10-25 20:37 | "Phase 2: Variables and Notation section; local LaTeX build with tectonic" | not pushed
+- Agent: Claude Code (Opus 5.5)
+- Changes:
+  - report/sections/02_variables.tex: Variables and Notation section: conventions (four items), five tables (symbols and code variables, frames by version, exact quantities, error terms and limits, simulator state); bold group headings
+  - report/main.tex: load xurl so code names in \path{} break across lines
+  - docs/course_reference.md: Part 3.5 notation summary from 02_variables.tex
+  - AGENTS.md: section 5/7: check poppler and tectonic before work; agent compiles LaTeX into report/build with tectonic and opens the PDF in the side pane
+  - AGENTS.md: section 2/5: user-approved exception for one root .gitignore line; root .gitignore ignores assignments/assignment2/report/build/
+  - AGENTS.md: section 6: Phase 1 compressed into Completed phases; Phase 2 is current; filled 7c01a97
+  - docs/progress_log.md: filled 7c01a97 (pushed), added this block
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/main.tex, report/sections/02_variables.tex, ../../.gitignore
