@@ -23,6 +23,8 @@
 \newcommand{\rank}{\operatorname{rank}}
 \newcommand{\Fun}[1]{\operatorname{#1}}
 \newcommand{\norm}[1]{\left\|#1\right\|_2}
+% code names that break only after _ . / , (\path from xurl breaks anywhere)
+\DeclareUrlCommand\fn{\urlstyle{tt}\def\UrlBreaks{\do\_\do\.\do\/\do\,}\def\UrlBigBreaks{}}
 \setcounter{tocdepth}{2}
 \cftpagenumbersoff{section}
 \cftpagenumbersoff{subsection}

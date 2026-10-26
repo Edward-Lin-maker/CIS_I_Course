@@ -1,3 +1,109 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
+\section{Program Structure}\label{sec:program}
+The program consists of four student modules under \fn{src/student/}, one notebook that drives the calibration and its evaluation, and a \fn{pytest} test file. The simulator in \fn{src/simulation/} and the nominal robot in \fn{src/robot.py} are supplied by the course and are not modified.
+
+\subsection{File and module organization}
+\begingroup\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.32\textwidth}>{\raggedright\arraybackslash}p{0.59\textwidth}}
+\caption{Program files and modules.}\label{tab:file-organization}\\
+\toprule
+Location & Responsibility \\\midrule
+\endfirsthead
+\toprule Location & Responsibility \\\midrule
+\endhead
+\fn{notebooks/assignment2_template.ipynb} & Defines the scene (Step~1), builds the simulation, runs the unit tests, homes the robot, plans and collects the calibration data, fits the improved kinematics, evaluates them (Steps~9--10), and compares plans over several seeds. \\\midrule
+\fn{src/student/metrics.py} & Pose-error metric $\Delta F=F_a^{-1}F_b$ and error statistics. \\\midrule
+\fn{src/student/registration.py} & Point-set registration, frame averaging and optional marker-body refinement. \\\midrule
+\fn{src/student/workflow.py} & Homing, pose planning, data collection, simulated-time estimate and the nominal base estimate. \\\midrule
+\fn{src/student/kinematics.py} & \fn{ImprovedKinematics}: error-model parameterization, $\Fun{ImprovedFwdKins}$, $\Fun{ImprovedInvKins}$, decoupled initial estimate, least-squares fit, choice of the rotation about $\vct{d}_1$, Jacobian rank report and parameter report. \\\midrule
+\fn{tests/test_student.py} & Unit tests of the four student modules (Section~\ref{sec:validation}). \\\midrule
+\fn{tests/test_simulation.py} & Course-supplied tests of the simulator. \\\midrule
+\fn{src/robot.py}, \fn{src/simulation/} & Course-supplied nominal robot, simulator, simulated clock and constants (not modified). \\\midrule
+\fn{data_types/}, \fn{assignments/assignment1/src/} & Course-supplied vector, rotation and frame types, tracker and marker-body classes. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\subsection{Program hierarchy}
+Figure~\ref{fig:program-hierarchy} shows the dependencies between the notebook and the modules. Each arrow points from a caller to the module it uses.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+mod/.style={draw,rounded corners,align=center,font=\small,minimum height=0.8cm,text width=3.3cm,line width=0.8pt},
+nb/.style={mod,draw=gray!70!black,fill=gray!12,font=\small\bfseries},
+stu/.style={mod,draw=blue!65!black,fill=blue!8},
+sup/.style={mod,draw=orange!80!black,fill=orange!10},
+dep/.style={-{Latex[length=2mm]},thick,gray!70!black}
+]
+\node[nb] (nb) at (0,0) {Notebook\\Steps 1--10};
+\node[stu] (wf) at (-4.2,-1.8) {\fn{workflow.py}};
+\node[stu] (kin) at (0,-1.8) {\fn{kinematics.py}};
+\node[stu] (met) at (4.2,-1.8) {\fn{metrics.py}};
+\node[stu] (reg) at (-2.1,-3.6) {\fn{registration.py}};
+\node[sup] (sim) at (-4.2,-5.4) {\fn{src/simulation/}\\robot, tracker, clock};
+\node[sup] (rob) at (0,-5.4) {\fn{src/robot.py}\\nominal kinematics};
+\node[sup] (dt) at (4.2,-5.4) {\fn{data_types/}\\\fn{vct3}, \fn{Rot}, \fn{Frame}};
+\draw[dep] (nb) -- (wf);
+\draw[dep] (nb) -- (kin);
+\draw[dep] (nb) -- (met);
+\draw[dep] (kin) -- (wf);
+\draw[dep] (wf) -- (reg);
+\draw[dep] (kin) -- (reg);
+\draw[dep] (wf) -- (sim);
+\draw[dep] (kin) -- (rob);
+\draw[dep] (kin.south east) -- (dt.north west);
+\draw[dep] (met) -- (dt);
+\end{tikzpicture}
+\caption{Program hierarchy. Blue: student modules; orange: course-supplied modules.}
+\label{fig:program-hierarchy}
+\end{figure}
+
+\subsection{Runtime functions}
+Table~\ref{tab:runtime-functions} lists the public functions of the student modules and the notebook step that first calls each. $\Fun{ImprovedInvKins}$ (\fn{ImprovedKinematics.inv_kins}) is supplied with the template and iterates on our \fn{fwd_kins}.
+
+\begingroup\scriptsize
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.055\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.32\textwidth}}
+\caption{Runtime functions.}\label{tab:runtime-functions}\\
+\toprule
+Step & Function & Inputs & Output and purpose \\\midrule
+\endfirsthead
+\toprule Step & Function & Inputs & Output and purpose \\\midrule
+\endhead
+4 & \fn{metrics.frame_error(F_a,F_b)} & Reference and compared frames. & $(\norm{\vct{\alpha}},\norm{\vct{\epsilon}})$ of $F_a^{-1}F_b$; every accuracy number uses it. \\\midrule
+4 & \fn{metrics.summarize_errors(errors)} & List of error pairs. & Count, RMS, mean and maximum of angle and position. \\\midrule
+5 & \fn{registration.register_points(a,b)} & Corresponding point lists. & Least-squares rigid frame $F$ with $F\vct{a}_i\approx\vct{b}_i$; rejects fewer than three pairs and collinear sets. \\\midrule
+5 & \fn{registration.average_frames(frames)} & Estimates of one frame. & Chordal mean rotation projected onto $SO(3)$ and mean translation. \\\midrule
+5 & \fn{registration.refine_marker_body(trk,placed,n)} & Tracker, placed body, number of readings. & Averaged body-frame marker layout, stored with $\Fun{UpdateMarkerBody}$ (optional; not used by the calibration). \\\midrule
+6 & \fn{workflow.measure_home_offsets(rob,n)} & Robot, number of homings. & $\Delta\theta_k$ at home, $-\overline{\theta}_{\mathrm{home}}$. \\\midrule
+6, 7 & \fn{workflow.collect_calibration_data(rob,trk,body,thetas,repeats)} & Robot, tracker, calibration body, commands. & \fn{CalibrationData}: commands, observed frames $F_{\mathrm{obs,trk,mBee},j}$, readings per sample, skipped poses, collection time. \\\midrule
+6, 7 & \fn{workflow.estimate_base_frame(data,kins)} & Data and a kinematic model. & Average of $F_{\mathrm{obs},j}F_{\mathrm{ee}}(\vct{\theta}_j)^{-1}$, i.e.\ $F_{\mathrm{init,trk,rob}}$ with the nominal model. \\\midrule
+7 & \fn{workflow.joint_knots(rob,h_stage,h_wrist)} & Robot, knot spacings. & Knot positions $\tau_{k,i}$ over each joint range. \\\midrule
+7 & \fn{workflow.readings_per_stop(layout,acc,...)} & Marker layout, angular and position targets. & Repetitions per stage stop and per wrist stop. \\\midrule
+7 & \fn{workflow.plan_calibration_poses(rob,trk,layout,acc,...)} & Robot, tracker, layout, target; plan options. & Ordered joint commands; raises if a stop is outside the limits or too close to the edge of the viewing volume. \\\midrule
+7 & \fn{workflow.estimate_plan_time(rob,thetas)} & Robot, commands. & Simulated time of the plan (motion plus readings). \\\midrule
+8 & \fn{ImprovedKinematics(rob,F_X_init,joint_offsets)} & Robot, initial base, home offsets. & Model with knots, home knots and zero parameters. \\\midrule
+8 & \fn{ImprovedKinematics.fit(data,F_tracker)} & Calibration data, specified tracker pose. & Decoupled start, weighted least squares, choice of the rotation about $\vct{d}_1$; returns residuals, iterations and the chosen gauge. \\\midrule
+8 & \fn{ImprovedKinematics.initial_estimate(data)} & Single-axis sweep data. & Closed-form parameter estimate (Section~\ref{sec:alg-init}). \\\midrule
+8 & \fn{ImprovedKinematics.choose_gauge(F_tracker)} & Specified tracker pose. & Rotation $c$ about $\vct{d}_1$ and its admissible interval. \\\midrule
+8 & \fn{ImprovedKinematics.jacobian_rank_report(data)} & Calibration data. & Singular values, rank, condition number and parameter standard deviations. \\\midrule
+8 & \fn{ImprovedKinematics.parameters_report()} & None. & Axes, axis angles, tilts, knot values, joint offsets and scales, tool twist, gauge. \\\midrule
+9 & \fn{ImprovedKinematics.fwd_kins(theta)}, \fn{predict_in_tracker(theta)} & Encoder command. & $\Fun{ImprovedFwdKins}(\vct{\theta})$ relative to the base, and $F_{\mathrm{est,trk,rob}}\Fun{ImprovedFwdKins}(\vct{\theta})$. \\\midrule
+10 & \fn{ImprovedKinematics.inv_kins(F,seed)} & Pose relative to the base, seed command. & $\Fun{ImprovedInvKins}(F)$: in-limit command nearest the seed. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\subsection{Tests}
+\fn{tests/test_simulation.py} contains 23 course-supplied tests of the simulator. \fn{tests/test_student.py} contains 23 test cases of the student modules: 11 supplied by the course, 5 written for the template's three TODO tests, and 7 added for our design. Section~\ref{sec:validation} describes them.
+
+\subsection{Program outputs}
+The notebook reports
+\begin{itemize}
+\setlength{\itemsep}{2pt}
+\item \textbf{Calibration:} home offsets, plan size and simulated collection time, fit residuals, Jacobian rank, the chosen rotation about $\vct{d}_1$ and the estimated parameters with their ground-truth comparison;
+\item \textbf{Evaluation:} forward and inverse errors of the nominal and improved kinematics, and the simulated testing time;
+\item \textbf{Several seeds:} calibration time, testing time and maximum errors for both plans and five seeds.
+\end{itemize}
 \end{document}

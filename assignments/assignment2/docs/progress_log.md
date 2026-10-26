@@ -188,3 +188,19 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: added TBD line for this commit
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, tests/test_student.py
+
+### TBD | 2026-10-26 17:08 | "Report: Sections 4-7 (algorithm, program structure, validation, results)" | not pushed
+- Agent: Claude Code (Opus 5.5), branch assignment2-gy
+- Changes:
+  - report/sections/04_algorithmic_approach.tex: Algorithmic Approach: scene design (incl. why no other marker body), homing, pose planning (knots, readings per stop, single-axis sweeps from theta = 0 and why, visibility margin, concurrent variant), data collection, decoupled initial estimate, weighted least-squares fit, rotation about d_1 chosen from the handout bounds (seven null directions, six removed by homing), improved FwdK/InvK, tracker-frame evaluation, execution-flow figure
+  - report/sections/05_program_structure.tex: module table, hierarchy figure, runtime-function table, tests, outputs
+  - report/sections/06_validation.tex: end-to-end metrics, supplied and own unit-test tables with purposes, 46 passed, limitations
+  - report/sections/07_results.tex: calibration data and time, estimated parameters vs truth, seed-1 accuracy, five seeds and both plans, the handout's base-frame definition (achieved accuracy, met for seed 1 only)
+  - report/sections/01_introduction.tex: section heading only, so that Sections 2-7 are numbered as the file names; body still to be written
+  - report/main.tex: preamble: fn macro (\fn) for code names that break only after _ . / ,
+  - audit against the handout, code and saved outputs: rotation R_trk,rob in the stage sweep equation, theta = 0 vs home reading (offset plus repeatability), plan time range, gauge wording, joint-offset labels (line value at 0 vs true c_k), test time
+  - Note: Section 3 (teammate) still states that homing removes all gauges and 6+10+6 parameters; Section 4 follows the code (G2+G3 remains, 59 parameters)
+  - Note: Section 7.4 (seeds 6-25) and 7.5 (base-frame metric) use separate verification runs, not saved notebook outputs
+  - AGENTS.md: section 6: added TBD line for this commit
+  - docs/progress_log.md: Pending merged into this block
+- Files: AGENTS.md, docs/progress_log.md, report/main.tex, report/sections/01_introduction.tex, report/sections/04_algorithmic_approach.tex, report/sections/05_program_structure.tex, report/sections/06_validation.tex, report/sections/07_results.tex

@@ -1,3 +1,161 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
+\section{Algorithmic Approach}\label{sec:algorithm}
+The implementation uses Python~3.11 with NumPy for linear algebra and \fn{scipy.optimize.least_squares} for the non-linear fit; the unit tests use \fn{pytest}. The course-supplied \fn{src} and \fn{data_types} modules provide the simulator and the vector, rotation and frame classes. The pipeline follows Method~1 of the handout: home the robot, sweep each joint through its knots, estimate the parameters of Eq.~\eqref{eq:actual-fk} in closed form, refine them by weighted least squares, and evaluate $\Fun{ImprovedFwdKins}$ and $\Fun{ImprovedInvKins}$ over the work volume. Ground truth is used only in the evaluation (Steps~8--10).
+
+\subsection{Scene design (Step~1)}\label{sec:alg-scene}
+\noindent\textit{Main tasks.} Step~1 fixes the robot base, the tracker pose and the layout of $mBee$.
+\begin{enumerate}
+\renewcommand{\labelenumi}{\roman{enumi}.}
+\item The robot base is placed at the workspace origin, $F_{\mathrm{rob}}=\Frame(I,\vct{0})$. A point $\vct{p}$ of the work volume moves by at most $\epsilon^{\max}_{\mathrm{rob}}+\alpha^{\max}_{\mathrm{rob}}\norm{\vct{p}}$ under the base error, so a work volume near the origin keeps this shift small.
+\item The tracker views the work volume from the side, about $1.7$\,m from its center $(840,0,200)$\,mm. The pose was chosen by a grid search over viewing directions and distances so that every calibration stop of both plans keeps more than $200$\,mm of clearance from the faces of the viewing volume beyond that worst-case shift. All 729 test poses of Step~9 are visible.
+\item $mBee$ is a regular tetrahedron of radius $r=74.9$\,mm, just inside $\norm{\vct{a}^*_k}\leq75$\,mm, centred on the origin of $\{e\}$. The layout is isotropic, $M=\tfrac23Nr^2I$, so the reading noise is the same about every axis and the symmetric part of the tracker-distortion gradient does not enter the rotation (Eqs.~\eqref{eq:pose-std} and \eqref{eq:trk-rot-bias}). With $N=4$ one reading has $\sigma_{\mathrm{rot}}=8.2\times10^{-4}$\,rad and $\sigma_{\mathrm{pos}}=0.05$\,mm per axis. The largest admissible radius minimizes the random error; the distortion bias does not depend on the size.
+\item No other marker body is defined. The tracker does not jiggle, so its frame is a fixed reference and needs no reference body, and $mBee$ needs no refinement because its layout is exact.
+\end{enumerate}
+
+\subsection{Homing (Step~6)}\label{sec:alg-home}
+\noindent\textit{Main task.} \fn{measure_home_offsets} calls $\Fun{HomeRobot}$ $N_h=5$ times and returns
+\begin{equation}
+\Delta\theta_{k}(\theta_{\mathrm{home},k})\approx c_{k,\mathrm{home}}=-\overline{\theta}_{\mathrm{home},k},
+\end{equation}
+as in Eq.~\eqref{eq:home-knot}. Each homing after the first costs about $t_{\mathrm{settle}}$. The values fix one knot per joint in Section~\ref{sec:alg-fit}. Step~6 then reads ten diagnostic poses to show the error of the nominal kinematics; these readings are not used by the calibration.
+
+\subsection{Pose planning (Step~7)}\label{sec:alg-plan}
+\noindent\textit{Main tasks.} Step~7 chooses the knots, the number of readings per stop and the order of the stops, and checks every stop against the joint limits and the viewing volume.
+
+\begingroup\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.09\textwidth}>{\raggedright\arraybackslash}p{0.28\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}}
+\caption{Planning functions (Step~7).}\label{tab:alg-plan}\\
+\toprule
+Step & Function & Inputs & Outputs \\\midrule
+\endfirsthead
+\toprule Step & Function & Inputs & Outputs \\\midrule
+\endhead
+7 & \fn{joint_knots} & Joint limits; $h_{\mathrm{stage}}=100$\,mm, $h_{\mathrm{wrist}}=\pi/4$. & Knots $\tau_{k,i}$ of each joint. \\\midrule
+7 & \fn{readings_per_stop} & Marker layout; targets $10^{-3}$\,rad and $0.2$\,mm. & Repetitions $n_{\mathrm{stage}}$, $n_{\mathrm{wrist}}$. \\\midrule
+7 & \fn{plan_calibration_poses} & Robot, tracker, layout, target, plan options. & Ordered joint commands. \\\midrule
+7 & \fn{estimate_plan_time} & Robot, commands. & Simulated time of the plan. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\begin{enumerate}
+\renewcommand{\labelenumi}{\roman{enumi}.}
+\item \fn{joint_knots} spaces the knots of each joint evenly over its full range, both ends included, at most $h_k$ apart: $7$ knots for each stage ($100$\,mm), $7$ for joints 4 and 5, and $9$ for joint 6 ($\pi/4$). By Table~\ref{tab:spacing} the interpolation error is at most $0.025$\,mm per stage and $2.0\times10^{-5}$\,rad per wrist joint.
+\item \fn{readings_per_stop} sizes the repetitions of each stop. A stop listed $n$ times in a row is re-commanded and re-read, which costs $t_{\mathrm{settle}}+\Delta t_{\mathrm{samp}}$ and averages both the reading noise and the joint repeatability. With $\sigma^2_{\mathrm{wrist}}=\sigma^2_{\mathrm{rot}}+\sigma^2_{k,\mathrm{rnd}}$ and $\sigma^2_{\mathrm{stage}}=\sigma^2_{\mathrm{pos}}+\sigma^2_{k,\mathrm{rnd}}$, a knot value stays within a share $f$ of the target when
+\begin{equation}\label{eq:alg-reps}
+n=\Bigl\lceil\frac{\sigma^2}{(f\cdot\mathrm{target})^2}\Bigr\rceil .
+\end{equation}
+With $f=0.1$, the random-estimation allowance of Table~\ref{tab:budget}, this gives $n_{\mathrm{stage}}=7$ and $n_{\mathrm{wrist}}=68$.
+\item \fn{plan_calibration_poses} with \fn{method="single_axis"} implements hint~1(b): each joint in turn is swept through all its knots, starting at the nearer end of its range, and the robot returns to the sweep base after each axis. The sweep base is the encoder configuration $\vct{\theta}=\vct{0}$. The $\Fun{HomeRobot}$ reading itself cannot serve as the base: it is $-\Delta\theta_k-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}$, which can be negative on joints 1 and 3, outside their $0$--$600$\,mm limits. $\vct{\theta}=\vct{0}$ differs from it only by this offset, at most $\delta_k$ plus the repeatability, and the home reading enters the model as the fixed home knot. The plan has 39 distinct poses and 1716 readings.
+\item Every stop must keep all markers inside the viewing volume with a clearance of $\epsilon^{\max}_{\mathrm{rob}}+\alpha^{\max}_{\mathrm{rob}}\norm{\vct{p}}$, evaluated with the nominal $F_{\mathrm{rob}}$ and $F_{\mathrm{ee}}$. The planner raises an error rather than dropping a stop, since a missing stop would leave a knot interval without data.
+\item \fn{estimate_plan_time} evaluates Eq.~\eqref{eq:time} with the simulator's motion-time model. The single-axis plan takes about $530$--$545$\,s, depending on the starting configuration; the travel of Section~\ref{sec:math-budget} accounts for about $340$\,s, and the stops and repetitions for the rest.
+\item \fn{method="concurrent"} is a faster variant used for comparison: the wrist joints 4, 5, 6 are swept together with the stages 1, 2, 3, so the stage travel shares the wrist's motion time. Its data no longer consist of single-axis sweeps, so the decoupled estimate of Section~\ref{sec:alg-init} does not apply.
+\end{enumerate}
+
+\subsection{Data collection and nominal base estimate (Steps~6--7)}\label{sec:alg-collect}
+\noindent\textit{Main tasks.} \fn{collect_calibration_data} moves the robot to each command with $\Fun{MoveJoints}$ and reads $mBee$ with $\Fun{SampleMarkerBodies}$. The \fn{repeats} readings at one command are averaged with \fn{average_frames}; they share the joint repeatability error, so this averaging removes only the reading noise. A pose at which $mBee$ is not visible is recorded as skipped after one reading, whose time is still charged. \fn{estimate_base_frame} then gives the initial base
+\begin{equation}
+F_{\mathrm{init,trk,rob}}=\operatorname{avg}_j\bigl(F_{\mathrm{obs,trk,mBee},j}\,F_{\mathrm{ee}}(\vct{\theta}_j)^{-1}\bigr)
+\end{equation}
+with the nominal kinematics, where $\operatorname{avg}$ is the chordal mean of \fn{average_frames}.
+
+\subsection{Decoupled initial estimate (Step~8)}\label{sec:alg-init}
+\noindent\textit{Main task.} \fn{initial_estimate} computes every parameter in closed form from the single-axis sweeps, rotation first and translation second, as in the AX\,=\,XB and pivot-calibration problems of the calibration lecture. Let $R_0,\vct{p}_0$ be the observation at the sweep base and $R_j,\vct{p}_j$ an observation of the sweep of joint $k$.
+\begin{enumerate}
+\renewcommand{\labelenumi}{\roman{enumi}.}
+\item \textit{Stages (pure translation).} The wrist does not move, so $\vct{p}_j-\vct{p}_0=R_{\mathrm{trk,rob}}\vct{d}^*_k\,(\theta^*_{k,j}-\theta^*_{k,0})$. The weighted mean direction of the displacements gives $R_{\mathrm{trk,rob}}\vct{d}^*_k$, and their projections give $\theta^*_{k,j}$ and hence $\Delta\theta_k$ at every stop.
+\item \textit{Wrist (pure rotation).} $R_0^TR_j=R\bigl(Q^T\vct{d}^*_k,\ \theta^*_{k,j}-\theta^*_{k,0}\bigr)$ for a constant rotation $Q$. Since a rotation angle is invariant under conjugation, the angle of $\log(R_0^TR_j)$ gives the joint value at each stop, and its axis gives the joint axis in the tracker frame, independently of the base, the tool and all translations.
+\item \textit{Base rotation and axes.} $R_{\mathrm{trk,rob}}$ is built from the measured directions of $\vct{d}^*_1$ and $\vct{d}^*_2$ (Section~\ref{sec:alg-gauge}); the axes, the tilts $\vct{\phi}_k$ and the tool rotation $\Delta R_{\mathrm{we}}$ follow.
+\item \textit{Translation (pivot calibration).} With the rotations known, all wrist-sweep observations satisfy $R_j\vct{s}+\vct{P}=\vct{p}_j$, a linear least-squares problem for the tool offset $\vct{s}$ in $\{e\}$ and the wrist center $\vct{P}$ in the tracker frame. They give $\vct{\epsilon}_{\mathrm{we}}$ and the base translation.
+\item The joint values at the stops are interpolated onto the knots; the home knots keep their measured values.
+\end{enumerate}
+On noise-free data this estimate is within $10^{-4}$\,rad and $0.01$\,mm of the generating model; on simulated data its residuals are $4\times10^{-4}$\,rad and $0.02$\,mm RMS, against $0.018$\,rad and $3.5$\,mm for the nominal model.
+
+\subsection{Weighted least-squares fit (Step~8)}\label{sec:alg-fit}
+\noindent\textit{Main tasks.} \fn{fit} refines the decoupled estimate over the full model Eq.~\eqref{eq:actual-fk}.
+\begin{enumerate}
+\renewcommand{\labelenumi}{\roman{enumi}.}
+\item \textit{Parameters.} $\vct{x}$ holds the base twist about $F_{\mathrm{init,trk,rob}}$ (6), the tilts (9: two for each of $\vct{d}_3,\vct{n}_4,\vct{n}_5,\vct{n}_6$ and the $z$-component for $\vct{d}_2$), the tool twist (6) and the knot values $c_{k,i}$ other than the home knots (38), 59 in all. $\Delta\theta_{\mathrm{est},k}$ is piecewise linear in the knot values, Eq.~\eqref{eq:knots}, and extrapolated linearly beyond the end knots.
+\item \textit{Residual.} For sample $j$, $\vct{r}_j=[\vct{\alpha}_j;\vct{\epsilon}_j]$ of $(F_{\mathrm{est,trk,rob}}F_{\mathrm{est,ee}}(\vct{\theta}_j))^{-1}F_{\mathrm{obs,trk,mBee},j}$, Eq.~\eqref{eq:residual}, with $\vct{\alpha}_j$ from $\log$ of the rotation. The rotation and translation parts are divided by $\sigma_{\mathrm{rot}}$ and $\sigma_{\mathrm{pos}}$; the repeatability term of the covariance in Section~\ref{sec:math-propagation} is omitted, which changes the relative weights by less than $2\%$.
+\item \textit{Merging.} Samples with the same command are averaged and weighted by $\sqrt{n}$, which gives the same least-squares problem with 39 instead of 1716 residual blocks.
+\item \textit{Solver.} \fn{least_squares} (trust-region reflective, Jacobian scaling, tolerances $10^{-12}$) starts from the decoupled estimate and converges in 10--20 evaluations.
+\item \textit{Rank.} \fn{jacobian_rank_report} differentiates the weighted residuals by central differences and reports the singular values; their inverses are the standard deviations of the parameter combinations along the right singular vectors, Eq.~\eqref{eq:param-cov}.
+\end{enumerate}
+
+\subsection{Rotation about \texorpdfstring{$\vct{d}_1$}{d1} (Step~8)}\label{sec:alg-gauge}
+The gauge families of Table~\ref{tab:gauge} span seven null directions, and each contains a constant shift of a joint value. Fixing the six home knots removes six of them, but not the combination G2\,+\,G3: a rotation $c$ about $\vct{x}$ of the base, with $\vct{\phi}_2,\vct{\phi}_3,\vct{\phi}_5,\vct{\phi}_6$ and $\vct{\alpha}_{\mathrm{we}}$ all changed by $-c\,\vct{x}$, shifts $\Delta\theta_4$ by $-c+c=0$. Because $\vct{d}_1$ and $\vct{n}_4$ both lie on $\vct{x}$, no data can determine $c$; every pose relative to the tracker is unchanged. The fit therefore holds the $x$-component of $\vct{\phi}_2$ at zero, which gives a full-rank Jacobian. Afterwards \fn{choose_gauge} moves the model exactly along the gauge, $F_{\mathrm{est,trk,rob}}\to F_{\mathrm{est,trk,rob}}\Frame(Q,\vct{0})$ and $F_{\mathrm{est,ee}}\to\Frame(Q^T,\vct{0})F_{\mathrm{est,ee}}$ with $Q=R(\vct{x},c)$, using only the handout's bounds: every $c$ with
+\begin{equation}
+\norm{\vct{\phi}_k(c)}\leq\phi_{\max}\ (k=2,3,5,6),\qquad\norm{\vct{\alpha}_{\mathrm{we}}(c)}\leq0.01,\qquad\norm{\vct{\alpha}_{\mathrm{rob}}(c)}\leq\alpha^{\max}_{\mathrm{rob}}
+\end{equation}
+is consistent with the handout, and the midpoint of this interval minimizes the worst-case error of $c$. The last condition uses the specified, exact tracker pose $F_{\mathrm{tracker}}$ and the nominal $F_{\mathrm{rob}}$.
+
+\subsection{Improved forward and inverse kinematics}\label{sec:alg-ik}
+\fn{fwd_kins} evaluates Eq.~\eqref{eq:actual-fk} with $\theta_{\mathrm{est},k}=\theta_k+\Delta\theta_{\mathrm{est},k}(\theta_k)$, $\vct{d}_{\mathrm{est},k}=R(\vct{\phi}_{\mathrm{est},k})\vct{d}_k$ and $F_{\mathrm{we}}\Delta F_{\mathrm{est,we}}$, followed by the gauge rotation $Q^T$. \fn{inv_kins}, supplied with the template, seeds both wrist branches from the nominal closed form, refines them by Levenberg--Marquardt steps on the pose error of \fn{fwd_kins}, Section~\ref{sec:math-ik}, and returns the in-limit solution nearest the seed.
+
+\subsection{Evaluation (Steps~9--10)}\label{sec:alg-eval}
+\noindent\textit{Main tasks.} Step~9 evaluates $\Fun{ImprovedFwdKins}$ on the fixed grid of the template (729 poses, all visible): for each $\vct{\theta}_i$,
+\begin{equation}\label{eq:alg-fwd-metric}
+\Delta F_i=\bigl(F_{\mathrm{tracker}}^{-1}F^*_{\mathrm{rob}}F^*_{\mathrm{ee}}(\vct{\theta}_i)\bigr)^{-1}F_{\mathrm{est,trk,rob}}\Fun{ImprovedFwdKins}(\vct{\theta}_i).
+\end{equation}
+Step~10 takes 40 grid poses as targets $F$ in the tracker frame, commands
+\begin{equation}
+\vct{\theta}=\Fun{ImprovedInvKins}\bigl(F_{\mathrm{est,trk,rob}}^{-1}F\bigr)
+\end{equation}
+with $\Fun{MoveJoints}$, and compares $F$ with the pose actually reached. Both metrics are expressed in the tracker frame, as in the template: there the base estimate and the kinematics enter together, so the unobservable rotation $c$ cancels. The handout's definition relative to the robot base is reported separately in Section~\ref{sec:results}. The targets are visited in a greedy nearest-first order of motion time, which leaves the targets unchanged and shortens the testing time.
+
+\subsection{Function-level execution flow}
+Figure~\ref{fig:alg-flow} shows the call sequence of Steps~6--10.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+basefun/.style={draw,rounded corners,align=center,font=\scriptsize,minimum height=0.78cm,text width=3.25cm,line width=0.8pt},
+homefun/.style={basefun,draw=blue!65!black,fill=blue!8},
+planfun/.style={basefun,draw=green!55!black,fill=green!9},
+fitfun/.style={basefun,draw=violet!70!black,fill=violet!10},
+evalfun/.style={basefun,draw=cyan!60!black,fill=cyan!10},
+flow/.style={-{Latex[length=2mm]},thick,gray!70!black},
+flowlabel/.style={font=\scriptsize,fill=white,inner sep=1.5pt}
+]
+\node[anchor=east,font=\scriptsize\bfseries] at (-7.3,0) {Step 6};
+\node[homefun] (home) at (-5.1,0) {\fn{measure_home_}\\\fn{offsets}};
+\node[homefun] (homerobot) at (0,0) {$\Fun{HomeRobot}$};
+
+\node[anchor=east,font=\scriptsize\bfseries] at (-7.3,-1.8) {Step 7};
+\node[planfun] (knots) at (-5.1,-1.8) {\fn{joint_knots},\\\fn{readings_per_stop}};
+\node[planfun] (plan) at (0,-1.8) {\fn{plan_calibration_}\\\fn{poses}};
+\node[planfun] (collect) at (5.1,-1.8) {\fn{collect_calibration_}\\\fn{data}};
+\node[planfun] (base) at (5.1,-3.3) {\fn{estimate_base_}\\\fn{frame}};
+
+\node[anchor=east,font=\scriptsize\bfseries] at (-7.3,-4.8) {Step 8};
+\node[fitfun] (init) at (-5.1,-4.8) {\fn{initial_estimate}};
+\node[fitfun] (lsq) at (0,-4.8) {\fn{least_squares} on\\\fn{residuals}};
+\node[fitfun] (gauge) at (5.1,-4.8) {\fn{choose_gauge}};
+\node[fitfun] (rank) at (0,-6.05) {\fn{jacobian_rank_}\fn{report},\\\fn{parameters_report}};
+
+\node[anchor=east,font=\scriptsize\bfseries] at (-7.3,-7.8) {Steps 9--10};
+\node[evalfun] (fwd) at (-5.1,-7.8) {\fn{predict_in_tracker}};
+\node[evalfun] (inv) at (0,-7.8) {\fn{inv_kins},\\$\Fun{MoveJoints}$};
+\node[evalfun] (err) at (5.1,-7.8) {\fn{frame_error},\\\fn{summarize_errors}};
+
+\draw[flow] (home) -- node[flowlabel,above] {$N_h$ calls} (homerobot);
+\draw[flow] (home.south) -- node[flowlabel,right] {home knots} (knots.north);
+\draw[flow] (knots) -- (plan);
+\draw[flow] (plan) -- node[flowlabel,above] {commands} (collect);
+\draw[flow] (collect) -- (base);
+\draw[flow] (base.south) -- (5.1,-4.0) -- node[flowlabel,above] {data, $F_{\mathrm{init,trk,rob}}$} (-5.1,-4.0) -- (init.north);
+\draw[flow] (init) -- node[flowlabel,above] {start} (lsq);
+\draw[flow] (lsq) -- node[flowlabel,above] {$\vct{x}$} (gauge);
+\draw[flow] (lsq) -- (rank);
+\draw[flow] (gauge.south) -- (5.1,-7.0) -- node[flowlabel,above,pos=0.82] {calibrated model} (-5.1,-7.0) -- (fwd.north);
+\draw[flow] (5.1,-7.0) -- (0,-7.0) -- (inv.north);
+\draw[flow] (fwd.south) -- (-5.1,-8.7) -- (5.1,-8.7) -- (err.south);
+\draw[flow] (inv) -- (err);
+\end{tikzpicture}%
+}
+\caption{Execution flow (Steps~6--10).}
+\label{fig:alg-flow}
+\end{figure}
 \end{document}
