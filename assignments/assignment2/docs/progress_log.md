@@ -181,7 +181,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, notebooks/assignment2_template.ipynb, src/student/kinematics.py, src/student/metrics.py, src/student/registration.py, src/student/workflow.py, tests/test_student.py
 
-### TBD | 2026-10-26 16:16 | "Tests: collect_calibration_data and estimate_plan_time" | not pushed
+### 1ed6048 | 2026-10-26 16:16 | "Tests: collect_calibration_data and estimate_plan_time" | pushed
 - Agent: Claude Code (Opus 5.5), branch assignment2-gy
 - Changes:
   - tests/test_student.py: test_collect_calibration_data_averages_readings_and_skips_invisible_poses (tracker shifted 800 mm: visible pose gives one sample averaged from 3 readings near the actual pose, invisible pose skipped after one reading with a warning, t_collect = motion time + readings, repeats < 1 rejected); test_estimate_plan_time_matches_the_simulated_clock (estimate equals the clock advance of collecting a plan); 46 passed
