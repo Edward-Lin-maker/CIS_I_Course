@@ -161,6 +161,52 @@ def test_readings_per_stop_grows_with_accuracy():
     assert n_tight[0] >= 3 * n_loose[0] and n_tight[1] >= 3 * n_loose[1]
 
 
+def _scene(F_tracker, seed=0):
+    rob = simulation.create_robot("rob", Frame.eye(), seed=seed)
+    trk = simulation.create_tracker("trk", F_tracker, seed=seed)
+    body = simulation.create_robot_calibration_body(rob, MBEE_TETRA)
+    simulation.add_marker_bodies(trk, [body])
+    return rob, trk, body
+
+
+def test_collect_calibration_data_averages_readings_and_skips_invisible_poses():
+    """The tracker is shifted 800 mm so that the body is visible at theta = 0
+    (more than 200 mm inside the volume beyond the worst-case base shift) but
+    not at theta_1 = 600 (180 mm outside). The visible pose gives one sample
+    averaged from `repeats` readings, close to the actual pose; the invisible
+    one is recorded in `skipped` after a single reading; t_collect equals the
+    motion time plus delta_t_samp per reading taken."""
+    F_trk = Frame(F_TRK_SIDE.R, F_TRK_SIDE.p - vct3(800, 0, 0))
+    rob, trk, body = _scene(F_trk)
+    visible, hidden = np.zeros(6), np.array([600.0, 0, 0, 0, 0, 0])
+    expected_t = (rob.motion_time(rob.theta_cmd, visible) + rob.motion_time(visible, hidden)
+                  + 4 * simulation.constants.SAMPLE_DELTA_T_SEC)        # 3 readings + 1 failed reading
+    t0 = simulation.clock.elapsed
+    with pytest.warns(UserWarning, match="not visible at 1 of 2 poses"):
+        data = workflow.collect_calibration_data(rob, trk, body, [visible, hidden], repeats=3)
+    assert len(data) == 1 and data.skipped == [1] and data.n_readings == [3]
+    assert np.allclose(data.thetas[0], visible)
+    assert np.isclose(data.t_collect, expected_t) and np.isclose(simulation.clock.elapsed - t0, expected_t)
+    rob.move_joints(visible)                       # same command: only the repeatability noise differs
+    angle, dist = metrics.frame_error(F_trk.inv() * body.actual_placement, data.frames[0])   # truth: test only
+    assert angle < 3e-3 and dist < 0.5
+    with pytest.raises(ValueError):
+        workflow.collect_calibration_data(rob, trk, body, [visible], repeats=0)
+
+
+def test_estimate_plan_time_matches_the_simulated_clock():
+    """estimate_plan_time uses the simulator's motion-time model plus one
+    delta_t_samp per pose, so for a plan with repeated, short and long moves
+    it must equal the clock advance of collecting the plan."""
+    rob, trk, body = _scene(F_TRK_SIDE)
+    plan = workflow.plan_calibration_poses(rob, trk, MBEE_TETRA, 2e-3, desired_pos_accuracy=0.4)[:40]
+    estimate = workflow.estimate_plan_time(rob, plan)
+    t0 = simulation.clock.elapsed
+    workflow.collect_calibration_data(rob, trk, body, plan, repeats=1)
+    assert len({tuple(t) for t in plan}) > 3
+    assert np.isclose(simulation.clock.elapsed - t0, estimate)
+
+
 def test_measure_home_offsets_matches_encoders():
     rob = simulation.create_robot("rob", Frame.eye(), seed=9)
     offsets = workflow.measure_home_offsets(rob, n_homings=20)
