@@ -189,7 +189,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, tests/test_student.py
 
-### 86379d8 | 2026-10-26 17:08 | "Report: Sections 4-7 (algorithm, program structure, validation, results)" | not pushed
+### 86379d8 | 2026-10-26 17:08 | "Report: Sections 4-7 (algorithm, program structure, validation, results)" | pushed
 - Agent: Claude Code (Opus 5.5), branch assignment2-gy
 - Changes:
   - report/sections/04_algorithmic_approach.tex: Algorithmic Approach: scene design (incl. why no other marker body), homing, pose planning (knots, readings per stop, single-axis sweeps from theta = 0 and why, visibility margin, concurrent variant), data collection, decoupled initial estimate, weighted least-squares fit, rotation about d_1 chosen from the handout bounds (seven null directions, six removed by homing), improved FwdK/InvK, tracker-frame evaluation, execution-flow figure
@@ -205,7 +205,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, report/main.tex, report/sections/01_introduction.tex, report/sections/04_algorithmic_approach.tex, report/sections/05_program_structure.tex, report/sections/06_validation.tex, report/sections/07_results.tex
 
-### 339e2e6 | 2026-10-26 17:26 | "Notebook extended evaluation; report numbers from one saved run" | not pushed
+### 339e2e6 | 2026-10-26 17:26 | "Notebook extended evaluation; report numbers from one saved run" | pushed
 - Agent: Claude Code (Opus 5.5), branch assignment2-gy
 - Changes:
   - notebooks/assignment2_template.ipynb: calibrate helper (Steps 2, 6-8 for one seed, with fit statistics and the residual at the nominal start), run_pipeline uses it; new Extended evaluation cell: seeds 6-25 (single-axis), fit statistics over seeds 1-25, and for seeds 1-8 600 random full-range configurations (tracker frame; base frame with the bounds gauge and with c = 0) plus 30 base-frame InvK targets; whole notebook executed (about 4 min); the committed outputs are those of the run saved at 17:23
@@ -219,7 +219,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, notebooks/assignment2_template.ipynb, report/sections/04_algorithmic_approach.tex, report/sections/05_program_structure.tex, report/sections/06_validation.tex, report/sections/07_results.tex
 
-### TBD | 2026-10-26 17:34 | "Report: explain the unseeded reading noise (Sections 6.3, 7)" | not pushed
+### 4063c75 | 2026-10-26 17:34 | "Report: explain the unseeded reading noise (Sections 6.3, 7)" | pushed
 - Agent: Claude Code (Opus 5.5), branch assignment2-gy
 - Changes:
   - report/sections/06_validation.tex: Limitations: the seed fixes the robot errors, the repeatability draws and the tracker distortion field, but the simulator draws the reading noise from NumPy's unseeded global generator, so repeated runs of one seed differ slightly; reported numbers come from one saved run; the spread over 25 seeds stays within the targets; label sec:val-limits
