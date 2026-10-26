@@ -205,7 +205,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, report/main.tex, report/sections/01_introduction.tex, report/sections/04_algorithmic_approach.tex, report/sections/05_program_structure.tex, report/sections/06_validation.tex, report/sections/07_results.tex
 
-### TBD | 2026-10-26 17:26 | "Notebook extended evaluation; report numbers from one saved run" | not pushed
+### 339e2e6 | 2026-10-26 17:26 | "Notebook extended evaluation; report numbers from one saved run" | not pushed
 - Agent: Claude Code (Opus 5.5), branch assignment2-gy
 - Changes:
   - notebooks/assignment2_template.ipynb: calibrate helper (Steps 2, 6-8 for one seed, with fit statistics and the residual at the nominal start), run_pipeline uses it; new Extended evaluation cell: seeds 6-25 (single-axis), fit statistics over seeds 1-25, and for seeds 1-8 600 random full-range configurations (tracker frame; base frame with the bounds gauge and with c = 0) plus 30 base-frame InvK targets; whole notebook executed (about 4 min); the committed outputs are those of the run saved at 17:23
