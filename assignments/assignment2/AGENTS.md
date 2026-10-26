@@ -75,7 +75,7 @@ assignment2/
 - [ ] Phase 5 Results & report（多 seed 结果表、其余章节）
 
 ### Current phase commits（Phase 3；阶段完成后压缩进下方一行）
-- TBD | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
+- c0c22e1 | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914

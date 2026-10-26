@@ -149,7 +149,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled 1d78b39 (pushed), added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/main.tex, report/sections/01_introduction.tex … 07_results.tex
 
-### TBD | 2026-10-25 22:47 | "Reference: resolve tentative handout corrections in Part 3.2" | not pushed
+### c0c22e1 | 2026-10-25 22:47 | "Reference: resolve tentative handout corrections in Part 3.2" | pushed
 - Agent: Claude Code (Opus 5.5)
 - Changes:
   - docs/course_reference.md: Part 3.2 #1, #2, #3, #5, #7 made definitive with code/notebook basis (θs → θ2; n1..3 read as n4..6; d*_k ≈ d_k + sk(φ_k) d_k; InvK accuracy uses the reached pose F*_ee(θ); truncated-pyramid volume); added #18 (p6 hint 1(d): Δθ_sys map and φ_k are the unknowns, F*_ee) and #19 (p5–6 minor)
