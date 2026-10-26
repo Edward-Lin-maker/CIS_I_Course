@@ -76,7 +76,7 @@ assignment2/
 
 ### Current phase commits（Phase 3；阶段完成后压缩进下方一行）
 - c0c22e1 | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
-- TBD | 10-26 | Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)
+- 51e03b2 | 10-26 | Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
