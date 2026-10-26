@@ -130,7 +130,7 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 - The simulator keeps a simulated elapsed time t_elap, updated each time the robot moves or the tracker samples.
 
 ### The Tracker (p1–3)
-- Viewing volume: described as a "tetrahedral volume shown in Figure 2". The figure shows a truncated pyramid starting 100 cm from the camera, 120 cm deep, with a 100×100 cm near face and a 200×200 cm far face. Matches `Tracker.FRUSTUM_*` in the code (near 1000 mm, far 2200 mm, half-width 500–1000 mm).
+- Viewing volume: described as a "tetrahedral volume shown in Figure 2" (see 3.2 #7). The figure shows a truncated pyramid starting 100 cm from the camera, 120 cm deep, with a 100×100 cm near face and a 200×200 cm far face. Matches `Tracker.FRUSTUM_*` in the code (near 1000 mm, far 2200 mm, half-width 500–1000 mm).
 - Tracker pose: F*_tracker = F_tracker ΔF_tracker, ‖α_tracker‖₂ ≤ σ_Ta, ‖ε_tracker‖₂ ≤ σ_Tp. **This assignment assumes no jiggle: σ_Ta = σ_Tp = 0.**
 - Marker body: mB = DefineMarkerBody({a_m,1, …, a_m,N}). Actual positions a*_m,k = a_m,k + Δa_m,k, ‖Δa_m,k‖ ≤ δ_markers. The estimate can be improved by averaging multiple observations and calling PreviousValues = UpdateMarkerBody(mB, {…}). The simulator keeps using a*_m,k.
 - Measurement: b* = b + ε^trk_sys(b) + ε_b, with ε_b ~ N(0, σ_b² I), ‖ε^trk_sys(b)‖ ≤ δ^trk_sys, ‖∇ε^trk_sys‖ ≤ ω^trk_sys.
@@ -142,25 +142,25 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 - The robot is located at F_rob and consists of "a cartesian base and a spherical wrist with a modular tool holder". Units are mm and radians.
 - Nominal kinematics:
   - F_ee(θ) = F_c(θ1, θ2, θ3) F_cw F_w(θ4, θ5, θ6) F_we
-  - F_c = θ1 d1 + θ2 d2 + θ3 d3
+  - F_c = θ1 d1 + θ2 d2 + θ3 d3 (handout writes F_c(θ1, θs, θ3), see 3.2 #1)
   - F_w = R(n4, θ4) R(n5, θ5) R(n6, θ6)
   - F_cw = Frame(I, [500, 0, 0]ᵀ); F_we = Frame(I, [100, 0, 0]ᵀ)
-  - (d1, d2, d3) = (x, y, z); (n1, n2, n3) = (x, y, z); notation d_{k+3} = n_k
+  - (d1, d2, d3) = (x, y, z); (n1, n2, n3) = (x, y, z) [read as n4..6, see 3.2 #2]; notation d_{k+3} = n_k
 - Range: (0, −300, 0) mm ≤ (θ1, θ2, θ3) ≤ (600, 300, 600) mm; (−0.75π, −0.75π, −π) ≤ (θ4, θ5, θ6) ≤ (0.75π, 0.75π, π).
 - Actual kinematics: "The axes of F_c are not quite perpendicular, and the linear stages and revolute joints have some distortion and random error."
   - θ*_k = θ_k + Δθ^rob_k,rnd + Δθ^rob_k,sys, with Δθ^rob_k,rnd ~ N(0, σ²_k,rnd); State() returns θ_k.
   - ‖Δθ^rob_k,sys‖ ≤ δ^rob_k,sys and |dΔθ^rob_k,sys/dθ_k| ≤ ω^rob_k,sys ("Although it is small, the distortion is not negligible.")
-  - d*_1 = d1; d*_k = R(φ_k) d_k ≈ d_k + sk(R(φ_k) d_k) for 2 ≤ k ≤ 6, ‖φ_k‖ ≤ φ_max.
-  - F*_we = F_we ΔF_ee(η_ee), ‖α_ee‖ ≤ 0.01, ‖ε_ee‖ ≤ 0.5.
+  - d*_1 = d1; d*_k = R(φ_k) d_k ≈ d_k + sk(R(φ_k) d_k) [use d_k + sk(φ_k) d_k, see 3.2 #3] for 2 ≤ k ≤ 6, ‖φ_k‖ ≤ φ_max.
+  - F*_we = F_we ΔF_ee(η_ee) [written ΔF_we, see 3.2 #4], ‖α_ee‖ ≤ 0.01, ‖ε_ee‖ ≤ 0.5.
 
 ### The Robot — functions, homing, motion, parameters (p4–5)
 - Functions:
   - F = FwdKins(θ); θ = InvKins(F); (θ, θ̇, …) = State(); F = CommandedPose()
-  - Δt = MoveJoints(θ); Δt = MoveRobot(F), where MoveRobot(F) = MoveJoints(InvKins(F)) and CommandedPose(θ) = FwdKins(θ)
+  - Δt = MoveJoints(θ); Δt = MoveRobot(F), where MoveRobot(F) = MoveJoints(InvKins(F)) and CommandedPose(θ) = FwdKins(θ) [CommandedPose() = FwdKins(θ_cmd), see 3.2 #13]
   - "You will be asked to implement an improved version of the kinematics function."
 - Homing: θ_encoders = HomeRobot() moves to home, where θ*_k = 0, and returns the encoder values (those returned by State()).
-- Motion: θ_k^min ≤ θ_k ≤ θ_k^max, |θ̇_k| ≤ θ̇_k^max, |θ̈_k| ≤ θ̈_k^max. Motion time = t_settle + the time for the slowest joint. The value of t_settle is not given in the handout.
-- Creation: Rob = CreateRobot(F_rob, α^max_rob, ε^max_rob, θ^min, θ^max, t_settle, φ_max, σ_k,rnd, |θ̇^max|, |θ̈^max|). F*_rob = ΔF_rob F_rob (left-multiplied), ‖α_rob‖ ≤ α^max_rob, ‖ε_rob‖ ≤ ε^max_rob.
+- Motion: θ_k^min ≤ θ_k ≤ θ_k^max, |θ̇_k| ≤ θ̇_k^max (handout: θ_k|θ̇_k|, see 3.2 #14), |θ̈_k| ≤ θ̈_k^max. Motion time = t_settle + the time for the slowest joint. The value of t_settle is not given in the handout.
+- Creation: Rob = CreateRobot(F_rob, α^max_rob, ε^max_rob, θ^min, θ^max, t_settle, φ_max, σ_k,rnd, |θ̇^max|, |θ̈^max|). F*_rob = ΔF_rob F_rob (left-multiplied; handout formula garbled, see 3.2 #12), ‖α_rob‖ ≤ α^max_rob, ‖ε_rob‖ ≤ ε^max_rob.
 - Parameter values:
 
 | Parameter | k = 1–3 (linear) | k = 4–6 (revolute) |
@@ -177,13 +177,13 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 ### Calibration marker body mBee (p5)
 - Only ONE special marker body can be created: mBee = CreateRobotCalibrationBody({a*_1, …, a*_N}). Its a*_k are the actual (exact) values, and its coordinate system corresponds exactly to F_ee.
 - It cannot be redefined for a robot. ‖a*_k‖₂ ≤ 75 mm; a smaller size may be desirable, and the size is a design choice.
-- AttachCalibrationMarker(Rob) and DetachCalibrationMarker(Rob). When attached, F_mBee = F_ee, and its workspace pose is F_rob F_mBee.
+- AttachCalibrationMarker(Rob) and DetachCalibrationMarker(Rob). When attached, F_mBee = F_ee, and its workspace pose is F_rob F_mBee [actual: F*_rob F*_ee(θ*), see 3.2 #15].
 
 ### Problem and a few hints (p5–7)
 - Error definition: F*_ee = F_ee ΔF_ee, ΔF_ee ≈ Frame(I + sk(α_ee), ε_ee).
 - Deliverables: F_ee = ImprovedFwdKins(θ) and θ = ImprovedInvKins(F_ee) over the robot's work volume, with these targets:
   - FwdK: ΔF = (F*_ee(θ))⁻¹ ImprovedFwdKins(θ); ‖α_FwdK‖ ≤ 10⁻³ rad, ‖ε_FwdK‖ ≤ 0.2 mm.
-  - InvK: θ = ImprovedInvKins(F); ΔF = F⁻¹ FwdKins(θ); ‖α_InvK‖ ≤ 10⁻³ rad, ‖ε_InvK‖ ≤ 0.2 mm.
+  - InvK: θ = ImprovedInvKins(F); ΔF = F⁻¹ FwdKins(θ) [F*_ee(θ), see 3.2 #5]; ‖α_InvK‖ ≤ 10⁻³ rad, ‖ε_InvK‖ ≤ 0.2 mm.
 - Required steps:
   - define the tracking camera and its approximate pose;
   - create the robot and its approximate pose F_rob;
@@ -197,7 +197,7 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
   - (a) determine how close sample points must be for the desired accuracy (depends on δ^trk_sys, ω^trk_sys, δ^rob_k,sys, ω^rob_k,sys);
   - (b) go home, move along/about each individual axis while taking data, and return home after each axis;
   - (c) determine the angles between axes and the θ_k ↔ θ*_k transformation (interpolation scheme);
-  - (d) write the corrected forward and inverse kinematics;
+  - (d) write the corrected forward and inverse kinematics [see 3.2 #18];
   - (e) report the updated parameters, compare them to ground truth in debugging runs, and do "bottom line" testing of a reasonably sampled portion of the workspace.
 - Method 2, map the space and interpolate: needs many more data points and a dense random test sampling.
 - Method 3: a combination of both.
@@ -212,13 +212,13 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 - The report needs results tables for more than one seed and a Jacobian rank report justifying the parameterization.
 
 ## 3.2 Handout inconsistencies / typos (keep the original; flag in the report)
-1. p3: "F_c(θ1, θs, θ3)" — θs is presumably θ2.
-2. p3: (n1, n2, n3) = (x, y, z), but F_w uses n4, n5, n6; with d_{k+3} = n_k the intended reading is n4..6 = x, y, z.
-3. p3: d*_k ≈ d_k + sk(R(φ_k) d_k) — the small-angle form is presumably d_k + sk(φ_k) d_k.
+1. p3: "F_c(θ1, θs, θ3)" → F_c(θ1, θ2, θ3). Code: `src/robot.py` `fwd_kins` uses p_c = (θ1, θ2, θ3).
+2. p3: (n1, n2, n3) = (x, y, z) → (n4, n5, n6) = (x, y, z), since F_w uses n4, n5, n6 (d_{k+3} = n_k). Code: `Robot.AXES` = x, y, z twice; `fwd_kins` uses Rot('x', θ4) Rot('y', θ5) Rot('z', θ6).
+3. p3: d*_k ≈ d_k + sk(R(φ_k) d_k) → d*_k ≈ d_k + sk(φ_k) d_k (= d_k + φ_k × d_k). As written, a 3×3 matrix is added to a vector, and R(φ_k) d_k is d*_k itself. The exact form d*_k = R(φ_k) d_k is what the code uses (`exp_so3(phi_k) @ d_k` in `create_robot`).
 4. p3: F*_we = F_we ΔF_ee(η_ee) reuses the symbol ΔF_ee from p5's accuracy definition. In the report, write ΔF_we for the tool-mounting error.
-5. p5: the InvK accuracy uses F⁻¹ FwdKins(θ). Presumably the actual kinematics F*_ee(θ) is intended; to be confirmed.
+5. p6: the InvK accuracy ΔF = F⁻¹ FwdKins(θ) → F⁻¹ F*_ee(θ), the pose actually reached. Notebook Step 10: θ = `inv_kins(...)`, `rob.move_joints(θ)`, then the target is compared with `mbee_placed.actual_placement`. With the nominal FwdKins the measure would only test FwdKins/InvKins consistency.
 6. Error side: right-multiplied for tracker, F_we and F_ee; left-multiplied for F_mB and F_rob.
-7. p1: the volume is called "tetrahedral", but Figure 2 shows a truncated pyramid.
+7. p1: the volume is called "tetrahedral" → truncated pyramid, as drawn in Figure 2 and implemented by `Tracker.is_visible` / `Tracker.FRUSTUM_*`.
 8. p4–5: σ_k,sys, δ_k,sys and ω_k,sys have values in the p5 table but are missing from the p4 CreateRobot signature, and the handout gives σ_k,sys no role in its error model. Code: `create_robot` adds `sigma_sys`, `delta_sys`, `omega_sys` (plus `name`, `seed`); σ_sys is the ripple amplitude in Δθ_sys = c + sθ + σ sin(Aθ + B) (code-only model, `src/simulation/robot.py`).
 9. Not specified in the handout: t_settle (code: `T_SETTLE = 0.05` s), δ_markers, δ_mBa, δ_mBe (code reuses A1 values), the minimum number of mBee markers (code: ≥ 3), and that mBee starts attached (code). See `src/simulation/constants.py`, `calibration_body.py`.
 10. p2: {a_m.1, …, a_m,N} = MostRecentObservedMarkers(mB) → {b_m,1, …, b_m,N}. The function returns the observed marker positions in the tracker frame, not the body-frame a_m,k (A2 `src/simulation/marker_body.py` docstring says b). To get body-frame values, compute F_m⁻¹ b_m,k yourself.
@@ -229,6 +229,8 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 15. p5 / Figure 1: F_mBee breaks the single-subscript convention of p2 (F_mB = pose relative to the workspace; F_m = observed pose relative to the tracker), under which F_mBee would be relative to the workspace. The handout uses it in two other ways: p5 text "relative to the robot base … F_mBee = F_ee" (base-relative); Figure 1 arrow from the tracker (tracker-relative). p5 also writes the workspace pose without stars (F_rob F_mBee); the actual pose is F*_rob F*_ee(θ*) (`mbee_placed.actual_placement`). Not corrected; since mBee has no mounting error, the report writes base-relative poses as F_ee (any version) and tracker-relative poses as F_{trk,mBee}.
 16. Figure 1: F_ce (arrow from the wrist ball to the tool plate) is not defined in the text. By position it is F_w F_we; by the subscript reading ({c} → {e}) it is F_cw F_w F_we. Figure 1's F_c arrow (base → wrist ball) actually spans F_c F_cw. The figure is schematic; use the p3 equations.
 17. p3–5 minor (no effect on the math): p3 "F_c(θ1..3) = θ1 d1 + θ2 d2 + θ3 d3" equates a frame with a vector (read as Frame(I, Σ θ_k d_k)); p3 "The range of motion is as follows" is followed by blank space (the limits are listed above it); p4 "win which" → "in which"; p5 δ^rob_sys (k = 1..3 row) is missing k; p5 "DetachCalibrationMerker" → DetachCalibrationMarker; p5 "it's position" → its position.
+18. p6 hint 1(d): "knowing the actual values of θ_k and φ_k will enable you to compute θ*_k and F_ee" → knowing the θ_k → θ*_k map (Δθ_k,sys) and φ_k lets you compute θ*_k and F*_ee. θ_k is always known (encoder value from State()); what is unknown is Δθ_k,sys and φ_k.
+19. p5–6 minor (no effect on the math): "In particular, if …" is an unfinished sentence; ‖ε‖_FwdK → ‖ε_FwdK‖; α_iInvK → α_InvK; ε_Invk → ε_InvK; "This will can depend" → can depend; ω_k,sys in hint 1(a) is ω^rob_k,sys; stray "." after 1(e).
 
 ## 3.3 Report notation (updated while writing)
 Source: `report/sections/02_variables.tex` (notation only; derivations stay in LaTeX).
