@@ -168,7 +168,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
 
-### TBD | 2026-10-26 15:49 | "Phase 4: student code, unit tests and executed notebook (single-axis plan, decoupled init, gauge from handout bounds)" | not pushed
+### 5428df6 | 2026-10-26 15:50 | "Phase 4: student code, unit tests and executed notebook (single-axis plan, decoupled init, gauge from handout bounds)" | pushed
 - Agent: Claude Code (Opus 5.5), branch assignment2-gy (new branch for this work, based on assignment2 at 30d8d49)
 - Changes:
   - src/student/metrics.py: frame_error (rotation angle from log_so3, translation norm); summarize_errors (n, rms/mean/max of angle and position)
