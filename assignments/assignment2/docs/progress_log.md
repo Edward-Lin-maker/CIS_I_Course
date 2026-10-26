@@ -127,7 +127,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled dc3ef9b (pushed), added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md
 
-### TBD | 2026-10-25 20:37 | "Phase 2: Variables and Notation section; local LaTeX build with tectonic" | not pushed
+### 1d78b39 | 2026-10-25 20:37 | "Phase 2: Variables and Notation section; local LaTeX build with tectonic" | pushed
 - Agent: Claude Code (Opus 5.5)
 - Changes:
   - report/sections/02_variables.tex: Variables and Notation section: conventions (four items), five tables (symbols and code variables, frames by version, exact quantities, error terms and limits, simulator state); bold group headings
@@ -138,3 +138,13 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: Phase 1 compressed into Completed phases; Phase 2 is current; filled 7c01a97
   - docs/progress_log.md: filled 7c01a97 (pushed), added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/main.tex, report/sections/02_variables.tex, ../../.gitignore
+
+### TBD | 2026-10-25 22:44 | "Phase 2 done: subfiles build, Part 3.4 clarifications, reference cleanup" | not pushed
+- Agent: Claude Code (Opus 5.5)
+- Changes:
+  - report/main.tex, report/sections/*.tex: switched to subfiles; main.tex is the full report (\subfile per chapter; graphicspath also ../figures/); every chapter wraps itself in \documentclass[../main.tex]{subfiles} and compiles alone
+  - docs/course_reference.md: new Part 3.4 Clarifications and interim conclusions (Phase 1 distillation, 20 items, basis → conclusion); removed the Phase 0 estimates (old 3.3 working understanding, old 3.4 error-budget notes); renumbered notation to 3.3; 3.1 viewing-volume note cites Tracker.FRUSTUM_*; header lists the Part 3 sections
+  - AGENTS.md: section 2: distill non-obvious conclusions into Part 3.4 at phase end after user confirmation; section 5: in report/, log main.tex, sections/ and figures/ only (not build/ or temporary preview chapters); section 7: per-chapter tectonic build via subfiles, fixed relative layout of main.tex/sections/figures, temporary preview chapters deleted after review; section 3 index updated
+  - AGENTS.md: section 6: Phase 2 marked complete and compressed into Completed phases; Phase 3 is current; filled 1d78b39
+  - docs/progress_log.md: filled 1d78b39 (pushed), added this block
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/main.tex, report/sections/01_introduction.tex … 07_results.tex

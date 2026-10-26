@@ -3,7 +3,7 @@
 Three parts:
 - **Part 1** Lecture notes, condensed (includes my interpolation-error guide)
 - **Part 2** A1 report, condensed (format reference; full source in `docs/a1_report.tex`)
-- **Part 3** A2 task, condensed + working understanding (living section; updated while writing the report's notation/math)
+- **Part 3** A2 task, condensed + working understanding (living section): 3.1 handout condensed, 3.2 handout typos, 3.3 report notation, 3.4 clarifications and interim conclusions
 
 Authority: for task requirements, `docs/2026_assignment_2.pdf` (R. H. Taylor, *Assignment 2 – CIS I (601.455/655) Fall 2026*, October 15, 2026) is the source of truth.
 Course repository: https://github.com/LCSR-CIIS/CIS_I_Course
@@ -119,7 +119,7 @@ Cell conventions:
 
 ---
 
-# Part 3 A2 task (condensed) + working understanding — LIVING SECTION
+# Part 3 A2 task (condensed) + clarifications — LIVING SECTION
 
 Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout.
 
@@ -130,7 +130,7 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 - The simulator keeps a simulated elapsed time t_elap, updated each time the robot moves or the tracker samples.
 
 ### The Tracker (p1–3)
-- Viewing volume: described as a "tetrahedral volume shown in Figure 2". The figure shows a truncated pyramid starting 100 cm from the camera, 120 cm deep, with a 100×100 cm near face and a 200×200 cm far face. These dimensions were read from the figure; verify against the PDF.
+- Viewing volume: described as a "tetrahedral volume shown in Figure 2". The figure shows a truncated pyramid starting 100 cm from the camera, 120 cm deep, with a 100×100 cm near face and a 200×200 cm far face. Matches `Tracker.FRUSTUM_*` in the code (near 1000 mm, far 2200 mm, half-width 500–1000 mm).
 - Tracker pose: F*_tracker = F_tracker ΔF_tracker, ‖α_tracker‖₂ ≤ σ_Ta, ‖ε_tracker‖₂ ≤ σ_Tp. **This assignment assumes no jiggle: σ_Ta = σ_Tp = 0.**
 - Marker body: mB = DefineMarkerBody({a_m,1, …, a_m,N}). Actual positions a*_m,k = a_m,k + Δa_m,k, ‖Δa_m,k‖ ≤ δ_markers. The estimate can be improved by averaging multiple observations and calling PreviousValues = UpdateMarkerBody(mB, {…}). The simulator keeps using a*_m,k.
 - Measurement: b* = b + ε^trk_sys(b) + ε_b, with ε_b ~ N(0, σ_b² I), ‖ε^trk_sys(b)‖ ≤ δ^trk_sys, ‖∇ε^trk_sys‖ ≤ ω^trk_sys.
@@ -230,22 +230,7 @@ Page numbers refer to `docs/2026_assignment_2.pdf`. Notation follows the handout
 16. Figure 1: F_ce (arrow from the wrist ball to the tool plate) is not defined in the text. By position it is F_w F_we; by the subscript reading ({c} → {e}) it is F_cw F_w F_we. Figure 1's F_c arrow (base → wrist ball) actually spans F_c F_cw. The figure is schematic; use the p3 equations.
 17. p3–5 minor (no effect on the math): p3 "F_c(θ1..3) = θ1 d1 + θ2 d2 + θ3 d3" equates a frame with a vector (read as Frame(I, Σ θ_k d_k)); p3 "The range of motion is as follows" is followed by blank space (the limits are listed above it); p4 "win which" → "in which"; p5 δ^rob_sys (k = 1..3 row) is missing k; p5 "DetachCalibrationMerker" → DetachCalibrationMarker; p5 "it's position" → its position.
 
-## 3.3 Working understanding (preliminary; confirm during line-by-line reading)
-- Actual model, assembled from p3 (not written as one line in the handout): F*_ee(θ) = F*_c(θ*_1..3; d*_1..3) F_cw F*_w(θ*_4..6; n*_4..6) F*_we. F_cw is assumed exact because the handout lists no error for it.
-- Error sources vs. targets:
-  - Δθ_sys on the revolute joints (0.01 rad) is 10× the target, so it must be calibrated.
-  - φ_k = 0.02 over 600 mm of travel gives ≈ 12 mm, the dominant error.
-  - ΔF_we must be calibrated.
-  - Δθ_rnd cannot be calibrated but is well below the targets.
-- Measurement chain: F_trk,mBee = F_tracker⁻¹ F*_rob F*_ee(θ). F_tracker and F*_rob are nuisance parameters: estimate them jointly or eliminate them.
-
-## 3.4 Error-budget notes (preliminary)
-- Linear-joint Δθ_sys with linear interpolation: error ≤ ω h/2 = 5×10⁻⁴ h/2. With h = 200 mm this is 0.05 mm, so 4–7 samples per 600 mm axis are enough.
-- Wrist Δθ_sys up to 0.01 rad exceeds 10⁻³, so it must be calibrated. Its interpolation error is tiny: ω h/2 = 1.25×10⁻⁵ rad at h = 0.5 rad.
-- Tracker systematic error between two points: ≤ min(2δ, ω_trk d) = min(0.2 mm, 7.5×10⁻⁴ d). Long baselines use up budget, so measure near the center of the volume.
-- Noise: σ_b = 0.1 mm; use many markers and repeated samples (σ/√n). Sampling is cheap (0.03 s); motion dominates the time (600 mm takes ≥ 12 s).
-
-## 3.5 Report notation / math progress (updated while writing)
+## 3.3 Report notation (updated while writing)
 Source: `report/sections/02_variables.tex` (notation only; derivations stay in LaTeX).
 - Marks: unmarked = nominal; * = actual (hidden); leading subscript `obs` = tracker output, `est` = our calibration result; stage labels `bl` (baseline), `init` (initial value), `est` (final). Index j = calibration sample (one move + one reading), k = joint or marker.
 - Frames: workspace, {trk}, {rob} (base), {c} (after the linear stages), {w} (wrist center), {e} (end-effector). F_{x,y} = pose of y relative to x. Single-subscript poses keep the handout meaning (F_tracker, F_rob, F_mB relative to the workspace; F_m relative to the tracker).
@@ -255,3 +240,35 @@ Source: `report/sections/02_variables.tex` (notation only; derivations stay in L
 - Calibrated model: φ_{est,k}, Δθ_{est,k,sys}(θ_k), ΔF_{est,we} (`improved.params`, `parameters_report()`); F_{est,ee}(θ) = ImprovedFwdKins (`improved.fwd_kins`).
 - Accuracy: ΔF_FwdK = (F*_ee)⁻¹ F_{est,ee}; ΔF_InvK between target and reached pose; both via `metrics.frame_error`.
 - Code-only state: θ = `rob.theta_cmd` (encoder = command), θ* = `rob._theta_star`, θ_home = return of `home_robot()` (handout θ_encoders), t_elap = `clock.elapsed`.
+
+## 3.4 Clarifications and interim conclusions
+Non-obvious conclusions reached while working, each with its basis (handout page, or file:line under `assignments/assignment2/`). Inferences are left to the derivations. Notation as in 3.3.
+
+### Phase 1 (line-by-line reading)
+**A. Robot commands and the simulator**
+1. **Encoder vs physical joint.** p3: θ*_k = θ_k + Δθ_k,rnd + Δθ_k,sys, State() returns θ_k; `src/simulation/robot.py:92-93`: `theta_cmd = theta`, `_theta_star = theta + _delta_theta_sys(theta) + rnd`. → The reported θ equals the last command exactly; all joint error lies between θ and θ*; Δθ_sys is evaluated at the encoder value.
+2. **No motion dynamics.** `robot.py:91-94` advances the clock by the whole motion time, then sets the final θ and θ* in one step. → No intermediate state; the tracker cannot observe the robot during a move.
+3. **Motion time.** p4: t_settle + slowest joint; `src/robot.py` `motion_time` uses a trapezoidal profile and `T_SETTLE = 0.05 s` (neither in the handout); wrist speed 0.1 rad/s (p5). → A π/2 wrist move takes ≈ 16 s. Docstring `robot.py:86`: a move to the current pose still costs t_settle and draws a new Δθ_rnd.
+4. **Homing.** p4: HomeRobot places the robot at θ*_k = 0 and returns the encoder values; `robot.py:57-63` iterates θ ← −Δθ_sys(θ) − Δθ_rnd (new Δθ_rnd per call); `robot.py:112` sets θ* = 0. → Return ≈ −Δθ_sys(0) − Δθ_rnd; repeated homings scatter about −Δθ_sys(0) with std σ_rnd. `robot.py:46-47` does the same at creation without advancing the clock, so the first State() is generally not zero.
+5. **Commands in pose space.** p4: MoveRobot(F) = MoveJoints(InvKins(F)), CommandedPose = FwdKins(θ); `src/robot.py` `commanded_pose` returns `fwd_kins(theta_cmd)`; notebook Step 10: `theta = kins.inv_kins(...)` then `rob.move_joints(theta)`. → The robot stores only θ; CommandedPose is a nominal prediction and never shows an error; a calibrated pose is commanded by passing ImprovedInvKins(F) to MoveJoints.
+6. **When mBee moves.** `_sync_calibration_body` is called at `robot.py:94` (move), `robot.py:113` (homing), `calibration_body.py:53` (attach) and only updates an attached body; detach sets `visible = False` (`calibration_body.py:62`); `calibration_body.py:42` attaches at creation. → The body starts attached and follows the robot; a detached body keeps its last pose and is not seen.
+
+**B. Kinematic structure and errors**
+1. **F_cw always acts along the base x axis.** p3: F_c = θ1 d1 + θ2 d2 + θ3 d3 (a translation), no error listed for F_cw; actual model `robot.py:68,72`: `Frame(Rot(), p_c) * F_CW * ...` with tilted axes only inside `p_c`. → Tilts change the direction of travel, not the orientation of {c}; F_c F_cw = Frame(I, p_c + [500,0,0]ᵀ) in both models; the wrist-center position depends only on θ1..3.
+2. **Wrist axes.** p3: F_w is a product of rotations; `robot.py:69-71`: actual wrist from `exp_so3` rotations without translation, order 4, 5, 6. → Tilted wrist axes still meet at the wrist center (no axis offsets in the model); n5, n6 are expressed in the frames after the preceding wrist rotations.
+3. **Two parameters per tilted axis.** `create_robot` draws φ_k ⊥ d_k (`sample_perpendicular`); `src/student/kinematics.py:33`: "two components each in the plane perpendicular to the nominal axis". A rotation about d_k leaves d_k unchanged. → Five tilted axes carry ten parameters.
+4. **Form of Δθ_sys.** p3 gives only the bounds δ^rob_k,sys and ω^rob_k,sys; the simulator uses c + sθ + σ sin(Aθ + B) (`robot.py:51-55`), σ = σ_k,sys (p5 table). → This form is hidden ground truth and must not be assumed; only the two bounds may be used.
+5. **Errors depend on the seed.** `create_robot` and `create_tracker` draw every static error from `seed` with norm in [0.5, 1] × bound (`BOUND_MIN_FRAC`); notebook Step 2: grading uses other seeds. → Rely only on the handout's bounds, not on values seen for one seed.
+
+**C. Tracker and measurements**
+1. **Base relative to the tracker is one constant unknown.** p3: σ_Ta = σ_Tp = 0, so F*_tracker = F_tracker (user-specified). → F*_{trk,rob} = F_tracker⁻¹ F*_rob contains only the unknown ΔF_rob and is constant; estimating it is equivalent to estimating F*_rob.
+2. **Who performs the SVD registration.** p2: SampleMarkerBodies computes and returns the frames; `src/simulation/tracker.py:102` delegates to the A1 sampler, which uses the simulator's `procrustes_solver`; `src/student/registration.py:18`: `register_points` must be "your own -- do not call the simulator's solver" (repeated in notebook Step 5). → Frames from SampleMarkerBodies may be used as tracker outputs; any additional registration in student code (e.g. `refine_marker_body`) must use the student's own `register_points`.
+3. **Error content of an mBee observation.** p5: mBee's a*_k are actual and its frame corresponds exactly to F_ee; `calibration_body.py:37-38` sets zero manufacturing error; each marker reading subtracts `systematic_error(p)` and adds Gaussian noise (A1 `tracker.py:110-112`, called by the A2 sampler). → mBee adds no geometry error of its own; every reading carries ε_b (new per reading) and ε^trk_sys (drawn once per tracker in `create_tracker`).
+4. **Visibility.** `src/simulation/tracker.py` `sample_marker_bodies` returns None for a body with any marker outside `trk.is_visible` (clock already advanced); volume = Figure 2 truncated pyramid, 1000–2200 mm deep, half-width 500–1000 mm (`Tracker.FRUSTUM_*`). → Every calibration pose must keep all mBee markers inside the volume, or the sample is lost while its time is still charged.
+5. **Two time budgets.** p1, p6: short calibration and testing time, measured by t_elap (`clock.elapsed`); p7: program execution ≤ 10 min; no code measures wall-clock time. → t_elap counts only moves and samples; the 10 min limit counts all computation; the two are independent.
+
+**D. Calibration pipeline in the provided code**
+1. **Base estimate before the fit.** `src/student/workflow.py:107-121`: every sample satisfies F_ee,j = F_X · kins.fwd_kins(θ_j) for one constant unknown F_X; "Estimate F_X from all samples (your average_frames may help)"; `kins` is "the nominal Robot at first". Notebook Steps 6–7: `F_X_baseline = estimate_base_frame(baseline, rob)` (≈ 10 poses), `F_X_nom = estimate_base_frame(data, rob)` (full data), `F_X_nom` passed as `F_X_init`. → Both estimate F*_{trk,rob} with the nominal kinematics; `F_X_baseline` only reports the nominal model's mismatch; `F_X_nom` is the starting value of the fit.
+2. **The fit works in the tracker frame.** `kinematics.py:156-157`: `residuals` compares `predict_in_tracker(theta_j, params)` with `data.frames[j]`; `kinematics.py:91-92`: `predict_in_tracker = base_frame(params) * fwd_kins(theta, params)`; `kinematics.py:32` (example layout): base twist in `params[0:6]`. → Base and kinematic parameters are adjusted together in one least-squares problem; each observation is compared with F_{est,trk,rob} F_{est,ee}(θ_j) without converting it to the base frame.
+3. **Evaluation.** Notebook Step 9: ΔF_i = (F_trk⁻¹ F*_ee(θ_i))⁻¹ (F̂_X · ImprovedFwdKins(θ_i)); Step 10 moves the robot with the computed θ and compares the target with `mbee_placed.actual_placement`. → The forward error is measured in the tracker frame and includes the base estimate; the inverse error is measured on the pose actually reached, including Δθ_rnd.
+4. **Comparing parameters with ground truth.** `parameters_report` docstring (`kinematics.py`): some parameters "are only defined up to the base-frame gauge (and so are better compared as angles between axes)". → Compare angles between axes rather than single axis directions.

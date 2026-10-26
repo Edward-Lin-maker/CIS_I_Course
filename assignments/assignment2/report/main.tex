@@ -12,6 +12,7 @@
 \usepackage[superscript]{cite}
 \usepackage[hidelinks]{hyperref}
 \usepackage{xurl}
+\usepackage{subfiles}
 \usepackage{tocloft}
 \newcommand{\vct}[1]{\bm{#1}}
 \newcommand{\sk}{\operatorname{sk}}
@@ -26,7 +27,7 @@
 \cftpagenumbersoff{section}
 \cftpagenumbersoff{subsection}
 \cftpagenumbersoff{subsubsection}
-\graphicspath{{figures/}}
+\graphicspath{{figures/}{../figures/}}
 
 \begin{document}
 \begin{titlepage}
@@ -55,13 +56,13 @@ Signature(s): \hrulefill
 \tableofcontents
 \clearpage
 
-\input{sections/01_introduction}
-\input{sections/02_variables}
-\input{sections/03_mathematical_approach}
-\input{sections/04_algorithmic_approach}
-\input{sections/05_program_structure}
-\input{sections/06_validation}
-\input{sections/07_results}
+\subfile{sections/01_introduction}
+\subfile{sections/02_variables}
+\subfile{sections/03_mathematical_approach}
+\subfile{sections/04_algorithmic_approach}
+\subfile{sections/05_program_structure}
+\subfile{sections/06_validation}
+\subfile{sections/07_results}
 % A1 also had a final "AI Assistance and Use of Tools" section; add it before submission.
 
 \clearpage
