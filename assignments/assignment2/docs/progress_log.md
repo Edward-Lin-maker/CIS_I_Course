@@ -157,3 +157,13 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: added TBD line for this commit (Phase 3)
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md
+
+### TBD | 2026-10-26 13:51 | "Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)" | not pushed
+- Agent: Claude Code (Opus 5.5)
+- Changes:
+  - report/sections/03_mathematical_approach.tex: full draft: measurement model; first-order error model (tilted revolute joint via conjugation, wrist/tool/base composition, boxed residual, Jacobian column table, decoupling, second-order size); knot parameterization of Δθ_k, homing fixes one knot per joint, gauge families G1–G5, excitation and rank criterion; interpolation bound ω h/2 and spacing table; marker-noise pose covariance, tracker-distortion rotation bias ≤ ω^trk_sys, repeatability, parameter covariance, noisy knots; error budget table and calibration-time model; improved FwdK/InvK, J_0 with |det| = |cos θ5|, convergence
+  - report/sections/02_variables.tex: Conventions: shorthand for Section 3 (rob/trk superscripts, Δθ_k, δ_k, ω_k, R_k, R_w, p_cw, p_we)
+  - docs/course_reference.md: Part 3.3 theory notation (shorthand, base fit, error-model terms, parameters, propagation, time and IK symbols)
+  - AGENTS.md: section 6: added TBD line for this commit (Phase 3)
+  - docs/progress_log.md: added this block
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex

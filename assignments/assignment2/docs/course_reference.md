@@ -242,6 +242,11 @@ Source: `report/sections/02_variables.tex` (notation only; derivations stay in L
 - Calibrated model: φ_{est,k}, Δθ_{est,k,sys}(θ_k), ΔF_{est,we} (`improved.params`, `parameters_report()`); F_{est,ee}(θ) = ImprovedFwdKins (`improved.fwd_kins`).
 - Accuracy: ΔF_FwdK = (F*_ee)⁻¹ F_{est,ee}; ΔF_InvK between target and reached pose; both via `metrics.frame_error`.
 - Code-only state: θ = `rob.theta_cmd` (encoder = command), θ* = `rob._theta_star`, θ_home = return of `home_robot()` (handout θ_encoders), t_elap = `clock.elapsed`.
+- Shorthand (defined in 02 Conventions, used in 03): Δθ_k(θ_k) = Δθ^rob_{k,sys}; δ_k, ω_k = δ^rob_{k,sys}, ω^rob_{k,sys} (superscript rob vs trk separates robot and tracker errors); R_k = R(d_k, θ_k), k ≥ 4, R_w = R_4R_5R_6; p_cw = [500,0,0]ᵀ, p_we = [100,0,0]ᵀ. Base fit: F*_{trk,rob} = F_{init,trk,rob} ΔF_{trk,rob} with α_{trk,rob}, ε_{trk,rob} (`params[0:6]`; the code calls the base frame `F_X`).
+- Error-model terms: δp_c (stage translation error); β_k (body rotation error of wrist joint k); γ = T_4β_4 + T_5β_5 + β_6 with T_4 = R_6ᵀR_5ᵀ, T_5 = R_6ᵀ (wrist rotation error); α_ee, ε_ee (body error of F_ee); r_j = [α_j; ε_j] (residual of sample j, `residuals`); J_j, J (residual Jacobian, `jacobian_rank_report`); ΔF_obs,j with α_obs,j, ε_obs,j (registration error).
+- Parameters: x (parameter vector, `params`); t_{k,1}, t_{k,2} (tilt components on basis u_{k,1}, u_{k,2} ⊥ d_k); knots τ_{k,i}, spacing h_k, knot values c_{k,i} = Δθ_k(τ_{k,i}), hat weights w_{k,i}; c_{k,home} = −mean θ_home,k (`joint_offsets`); N_h (number of homings); gauge families G1–G5.
+- Error propagation: e_k (interpolation error of joint k); N, ã_k, r, M (mBee marker count, centered positions, radius, rotation information matrix); L_j (readings averaged at sample j); G = ∇ε^trk_sys, w (skew part of G), α_trk (tracker rotation bias); C_reg, C_j, W (covariances and weights); Σ_rnd = diag(σ²_{k,rnd}); J_θ,j (distortion columns).
+- Time and IK: T_k(Δ) (single-joint trapezoidal move time, `motion_time`); n_read; g(θ) (IK pose error); J_0, J_est (nominal and calibrated body Jacobian in θ); q (contraction factor).
 
 ## 3.4 Clarifications and interim conclusions
 Non-obvious conclusions reached while working, each with its basis (handout page, or file:line under `assignments/assignment2/`). Inferences are left to the derivations. Notation as in 3.3.

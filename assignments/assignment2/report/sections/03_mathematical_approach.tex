@@ -1,3 +1,253 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
+\section{Mathematical Approach}\label{sec:math}
+We follow Method~1 of the handout: estimate the parameters of the actual kinematic model and evaluate the calibrated model in place of the nominal one. This section (i) writes the measurement equation, (ii) linearizes it to obtain the residual Jacobian, (iii) shows which parameters the data can determine, (iv) derives how densely each joint must be sampled, (v) propagates the tracker errors to the calibrated model, (vi) combines all contributions into an error budget, and (vii) derives the improved forward and inverse kinematics. Notation, including the shorthand used below, follows Section~2.
+
+\subsection{Measurement model}\label{sec:math-model}
+\paragraph{Actual kinematics.} For an encoder command $\vct{\theta}_j$ the physical joint values are $\theta^*_{k,j}=\theta_{k,j}+\Delta\theta_k(\theta_{k,j})+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},j}$, and the actual end-effector pose relative to the actual base is
+\begin{equation}\label{eq:actual-fk}
+F^*_{\mathrm{ee}}(\vct{\theta}^*)=\Frame\Bigl(I,\ \textstyle\sum_{k=1}^{3}\theta^*_k\vct{d}^*_k\Bigr)\,F_{\mathrm{cw}}\,\Frame\bigl(R^*_w,\vct{0}\bigr)\,F_{\mathrm{we}}\Delta F_{\mathrm{we}},\qquad
+R^*_w=\prod_{k=4}^{6}R(\vct{d}^*_k,\theta^*_k),
+\end{equation}
+with $\vct{d}^*_k=R(\vct{\phi}_k)\vct{d}_k$, $\vct{\phi}_k\perp\vct{d}_k$, $\vct{\phi}_1=\vct{0}$. The wrist factors are applied in sequence, so $\vct{d}^*_5$ and $\vct{d}^*_6$ are expressed in the frames produced by the preceding wrist rotations. The nominal model $F_{\mathrm{ee}}(\vct{\theta})$ is Eq.~\eqref{eq:actual-fk} with $\vct{\theta}^*\to\vct{\theta}$, $\vct{d}^*_k\to\vct{d}_k$ and $\Delta F_{\mathrm{we}}\to I$.
+
+\paragraph{Observation.} Since $F^*_{\mathrm{tracker}}=F_{\mathrm{tracker}}$, the base pose relative to the tracker, $F^*_{\mathrm{trk,rob}}=F_{\mathrm{tracker}}^{-1}F^*_{\mathrm{rob}}$, is one constant unknown frame. Sample $j$ returns
+\begin{equation}\label{eq:observation}
+F_{\mathrm{obs,trk,mBee},j}=F^*_{\mathrm{trk,rob}}\,F^*_{\mathrm{ee}}(\vct{\theta}^*_j)\,\Delta F_{\mathrm{obs},j},
+\end{equation}
+where $\Delta F_{\mathrm{obs},j}=\Frame(I+\sk(\vct{\alpha}_{\mathrm{obs},j}),\vct{\epsilon}_{\mathrm{obs},j})$ is the registration error caused by the marker noise $\vct{\epsilon}_b$ and the tracker distortion $\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}$ (Section~\ref{sec:math-propagation}).
+
+\paragraph{Unknowns.} The unknowns are the base $F^*_{\mathrm{trk,rob}}$ (6 values), the axis tilts $\vct{\phi}_2,\dots,\vct{\phi}_6$ (two values each, since a component of $\vct{\phi}_k$ along $\vct{d}_k$ does not change $\vct{d}^*_k$), the tool error $\Delta F_{\mathrm{we}}$ (6 values) and the six scalar functions $\Delta\theta_k(\cdot)$. Everything else in Eq.~\eqref{eq:actual-fk} is exact (Table~\ref{tab:exact}). The handout bounds only $|\Delta\theta_k|\leq\delta_k$ and $|\Delta\theta_k'|\leq\omega_k$; it gives no functional form, so $\Delta\theta_k$ must be represented in a way whose error follows from these two bounds (Section~\ref{sec:math-spacing}).
+
+\paragraph{Size of the errors.} With the bounds of Table~\ref{tab:errors}, every term exceeds the targets $10^{-3}$\,rad and $0.2$\,mm: a stage tilt of $0.02$ over $600$\,mm of travel moves the wrist center by up to $12$\,mm, a wrist distortion of $0.01$\,rad is ten times the angular target, and $\Delta F_{\mathrm{we}}$ reaches $0.01$\,rad and $0.5$\,mm. All terms must therefore be calibrated.
+
+\subsection{First-order error model}\label{sec:math-linear}
+We write each actual frame as the nominal frame times a small body-frame error and keep first-order terms. Two rules are used throughout, for a rotation $R$, a frame $F=\Frame(R,\vct{p})$ and a small error $\Delta F=\Frame(I+\sk(\vct{\alpha}),\vct{\epsilon})$:
+\begin{align}
+(I+\sk(\vct{\beta}))R&=R\,\bigl(I+\sk(R^T\vct{\beta})\bigr),\label{eq:move-rot}\\
+F^{-1}\Delta F\,F&=\Frame\bigl(I+\sk(R^T\vct{\alpha}),\ R^T(\vct{\epsilon}-\sk(\vct{p})\vct{\alpha})\bigr),\label{eq:move-frame}
+\end{align}
+
+\paragraph{Linear stages.} With $\vct{d}^*_k\approx\vct{d}_k+\vct{\phi}_k\times\vct{d}_k$ and $\theta^*_k=\theta_k+\Delta\theta_k$,
+\begin{equation}\label{eq:dpc}
+\delta\vct{p}_c\equiv\vct{p}^*_c-\vct{p}_c\approx\sum_{k=1}^{3}\Bigl(\Delta\theta_k\,\vct{d}_k+\theta_k\,\vct{\phi}_k\times\vct{d}_k\Bigr).
+\end{equation}
+The distortion acts along each axis and the tilt across it, with a lever equal to the stage travel $\theta_k$.
+
+\paragraph{One tilted revolute joint.} Because $\vct{d}^*_k=R(\vct{\phi}_k)\vct{d}_k$, the actual joint rotation is the nominal one conjugated by $R(\vct{\phi}_k)$, which is exact:
+\begin{equation}
+R(\vct{d}^*_k,\theta^*_k)=R(\vct{\phi}_k)\,R(\vct{d}_k,\theta^*_k)\,R(\vct{\phi}_k)^T.
+\end{equation}
+Expanding to first order with Eq.~\eqref{eq:move-rot} gives $R(\vct{d}^*_k,\theta^*_k)\approx R_k\bigl(I+\sk(\vct{\beta}_k)\bigr)$ with
+\begin{equation}\label{eq:beta}
+\vct{\beta}_k=\Delta\theta_k\,\vct{d}_k+\bigl(R_k^T-I\bigr)\vct{\phi}_k
+=\Delta\theta_k\,\vct{d}_k+(\cos\theta_k-1)\,\vct{\phi}_k+\sin\theta_k\,\vct{\phi}_k\times\vct{d}_k .
+\end{equation}
+The tilt has no effect at $\theta_k=0$, grows with $|\theta_k|$, and $(R_k^T-I)$ annihilates any component of $\vct{\phi}_k$ along $\vct{d}_k$, which confirms that each axis carries two tilt parameters.
+
+\paragraph{Wrist and tool.} Moving the three factors to the right with Eq.~\eqref{eq:move-rot} gives $R^*_w\approx R_w(I+\sk(\vct{\gamma}))$, $R_w=R_4R_5R_6$, with
+\begin{equation}\label{eq:gamma}
+\vct{\gamma}=T_4\vct{\beta}_4+T_5\vct{\beta}_5+T_6\vct{\beta}_6,\qquad T_4=R_6^TR_5^T,\ T_5=R_6^T,\ T_6=I .
+\end{equation}
+With $F_{\mathrm{we}}\Delta F_{\mathrm{we}}=\Frame(I+\sk(\vct{\alpha}_{\mathrm{we}}),\vct{p}_{\mathrm{we}}+\vct{\epsilon}_{\mathrm{we}})$ and $R_{\mathrm{ee}}=R_w$, the end-effector position is $\vct{p}^*_{\mathrm{ee}}=\vct{p}^*_c+\vct{p}_{\mathrm{cw}}+R^*_w(\vct{p}_{\mathrm{we}}+\vct{\epsilon}_{\mathrm{we}})$. Writing $F^*_{\mathrm{ee}}=F_{\mathrm{ee}}\Delta F_{\mathrm{ee}}$ in the frame $\{e\}$,
+\begin{align}
+\vct{\alpha}_{\mathrm{ee}}&=\vct{\gamma}+\vct{\alpha}_{\mathrm{we}},\label{eq:alpha-ee}\\
+\vct{\epsilon}_{\mathrm{ee}}&=R_w^T\delta\vct{p}_c-\vct{p}_{\mathrm{we}}\times\vct{\gamma}+\vct{\epsilon}_{\mathrm{we}}.\label{eq:eps-ee}
+\end{align}
+
+\paragraph{Base.} We parameterize the base as $F^*_{\mathrm{trk,rob}}=F_{\mathrm{init,trk,rob}}\Delta F_{\mathrm{trk,rob}}$ about its starting estimate, as the repository does, with $\Delta F_{\mathrm{trk,rob}}=\Frame(I+\sk(\vct{\alpha}_{\mathrm{trk,rob}}),\vct{\epsilon}_{\mathrm{trk,rob}})$. Moving $\Delta F_{\mathrm{trk,rob}}$ to the end of the chain with Eq.~\eqref{eq:move-frame} and adding the errors gives the residual of sample $j$, $\vct{r}_j=[\vct{\alpha}_j;\vct{\epsilon}_j]$ of $\bigl(F_{\mathrm{init,trk,rob}}F_{\mathrm{ee}}(\vct{\theta}_j)\bigr)^{-1}F_{\mathrm{obs,trk,mBee},j}$:
+\begin{equation}\label{eq:residual}
+\boxed{\;
+\begin{aligned}
+\vct{\alpha}_j&=R_w^T\vct{\alpha}_{\mathrm{trk,rob}}+\vct{\gamma}+\vct{\alpha}_{\mathrm{we}}+\vct{\alpha}_{\mathrm{obs},j},\\
+\vct{\epsilon}_j&=R_w^T\bigl(\vct{\epsilon}_{\mathrm{trk,rob}}-\vct{p}_{\mathrm{ee}}\times\vct{\alpha}_{\mathrm{trk,rob}}+\delta\vct{p}_c\bigr)-\vct{p}_{\mathrm{we}}\times\vct{\gamma}+\vct{\epsilon}_{\mathrm{we}}+\vct{\epsilon}_{\mathrm{obs},j},
+\end{aligned}\;}
+\end{equation}
+where $R_w$, $\vct{p}_{\mathrm{ee}}$, $\delta\vct{p}_c$ and $\vct{\gamma}$ are evaluated at $\vct{\theta}_j$ and $\Delta\theta_k$ includes the random part $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},j}$.
+
+\paragraph{Jacobian.} Eq.~\eqref{eq:residual} is linear in the parameters, $\vct{r}_j\approx J_j\,\delta\vct{x}+\vct{\nu}_j$. With an orthonormal basis $\vct{u}_{k,1},\vct{u}_{k,2}\perp\vct{d}_k$ for the tilts, $\vct{\phi}_k=t_{k,1}\vct{u}_{k,1}+t_{k,2}\vct{u}_{k,2}$, the columns are listed in Table~\ref{tab:jacobian}. A change of $\Delta\theta_k$ enters through the distortion parameters of Section~\ref{sec:math-identify}.
+
+\begin{table}[H]
+\centering\small
+\caption{Columns of the residual Jacobian $J_j=\partial\vct{r}_j/\partial\vct{x}$ (upper block: rotation $\vct{\alpha}_j$; lower block: translation $\vct{\epsilon}_j$).}\label{tab:jacobian}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Parameter & $\partial\vct{\alpha}_j$ & $\partial\vct{\epsilon}_j$ \\\midrule
+Base rotation $\vct{\alpha}_{\mathrm{trk,rob}}$ & $R_w^T$ & $-R_w^T\sk(\vct{p}_{\mathrm{ee}})$ \\
+Base translation $\vct{\epsilon}_{\mathrm{trk,rob}}$ & $0$ & $R_w^T$ \\
+Stage distortion $\Delta\theta_k$, $k\leq3$ & $\vct{0}$ & $R_w^T\vct{d}_k$ \\
+Stage tilt $t_{k,i}$, $k=2,3$ & $\vct{0}$ & $\theta_k R_w^T(\vct{u}_{k,i}\times\vct{d}_k)$ \\
+Wrist distortion $\Delta\theta_k$, $k\geq4$ & $T_k\vct{d}_k$ & $-\vct{p}_{\mathrm{we}}\times T_k\vct{d}_k$ \\
+Wrist tilt $t_{k,i}$, $k\geq4$ & $T_k(R_k^T-I)\vct{u}_{k,i}$ & $-\vct{p}_{\mathrm{we}}\times T_k(R_k^T-I)\vct{u}_{k,i}$ \\
+Tool rotation $\vct{\alpha}_{\mathrm{we}}$ & $I$ & $0$ \\
+Tool translation $\vct{\epsilon}_{\mathrm{we}}$ & $0$ & $I$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Decoupling.} The rotation residual $\vct{\alpha}_j$ contains no linear-stage term, and the stage terms enter $\vct{\epsilon}_j$ only through $R_w^T\delta\vct{p}_c$. This is the handout's remark that the first three joints are decoupled from the last three. Moreover, every parameter belongs to a single joint or to a constant frame, so the error is a sum of single-joint terms; there is no term in which two joint distortions interact.
+
+\paragraph{Accuracy of the linearization.} The neglected second-order terms are not negligible: the base rotation ($\leq0.05$\,rad) at a lever of about $1$\,m gives $\tfrac12(0.05)^2\cdot10^3\approx1.3$\,mm, and the stage tilt gives $\tfrac12\phi_{\max}^2\cdot600=0.12$\,mm. Eq.~\eqref{eq:residual} is therefore used only to analyze the problem and to form the Gauss--Newton steps; the model that is fitted and evaluated is the exact Eq.~\eqref{eq:actual-fk}, with $\vct{d}^*_k=R(\vct{\phi}_k)\vct{d}_k$ and $\Delta F_{\mathrm{trk,rob}}$, $\Delta F_{\mathrm{we}}$ as exact frames.
+
+\subsection{Parameterization and identifiability}\label{sec:math-identify}
+\paragraph{Joint distortion.} Each $\Delta\theta_k$ is represented by its values $c_{k,i}=\Delta\theta_k(\tau_{k,i})$ at knots $\tau_{k,0}<\dots<\tau_{k,m_k}$ covering $[\theta^{\min}_k,\theta^{\max}_k]$ and linear interpolation between them,
+\begin{equation}\label{eq:knots}
+\Delta\theta_{\mathrm{est},k}(\theta)=\sum_{i}w_{k,i}(\theta)\,c_{k,i},\qquad w_{k,i}=\text{piecewise-linear hat function of knot }i .
+\end{equation}
+This form needs no assumption beyond the handout's bounds: its error between knots follows from $\omega_k$ alone (Section~\ref{sec:math-spacing}). A polynomial of fixed degree would need a bound on higher derivatives, which the handout does not give. One knot of each joint is placed at the home reading $\theta_{\mathrm{home},k}$.
+
+\paragraph{Homing measures one knot value per joint.} $\Fun{HomeRobot}$ stops at $\theta^*_k=0$ and returns $\theta_{\mathrm{home},k}=-\Delta\theta_k(\theta_{\mathrm{home},k})-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}$. The average of $N_h$ homings therefore gives
+\begin{equation}\label{eq:home-knot}
+c_{k,\mathrm{home}}=-\bar\theta_{\mathrm{home},k},\qquad \operatorname{std}(c_{k,\mathrm{home}})=\sigma_{k,\mathrm{rnd}}/\sqrt{N_h},
+\end{equation}
+without any tracker measurement.
+
+\paragraph{Parameter vector.} $\vct{x}=[\vct{\alpha}_{\mathrm{trk,rob}};\vct{\epsilon}_{\mathrm{trk,rob}};t_{2,1},\dots,t_{6,2};\vct{\alpha}_{\mathrm{we}};\vct{\epsilon}_{\mathrm{we}};c_{k,i}]$: $6+10+6$ geometric values plus the knot values other than the home knots.
+
+\paragraph{Gauge freedoms.} A combined change of parameters that leaves every predicted pose $F^*_{\mathrm{trk,rob}}F^*_{\mathrm{ee}}$ unchanged cannot be determined by any data. Such changes are generated by inserting $QQ^T$, with $Q$ a constant rigid transformation, between two links of the chain and absorbing $Q$ and $Q^T$ into the adjacent factors. The insertion is invisible to the model only when both factors can absorb it with their own parameters. Checking every link of Eq.~\eqref{eq:actual-fk} gives exactly the five families of Table~\ref{tab:gauge}; each can be verified by substituting it into Eq.~\eqref{eq:residual}. For example, in G2 the base rotation $c\,\vct{x}$ changes $\vct{\alpha}_j$ by $cR_w^T\vct{x}=cT_4\vct{x}$, which $\Delta\theta_4=-c$ cancels; the same $\Delta\theta_4$ cancels the part of $-R_w^T\vct{p}_{\mathrm{ee}}\times c\,\vct{x}$ due to the tool offset, and the remaining change of $\vct{\epsilon}_j$, $cR_w^T(\theta_2\vct{z}-\theta_3\vct{y})$, is cancelled by $\vct{\phi}_2=\vct{\phi}_3=-c\,\vct{x}$ through Eq.~\eqref{eq:dpc}. A rotation of the base about $\vct{y}$ or $\vct{z}$ is not a gauge, because it would tilt $\vct{d}_1$, which carries no tilt parameter.
+
+\begin{table}[H]
+\centering\small
+\caption{Gauge freedoms of the model (first order; $c$ is a scalar, $\vct{v}$ a vector). Each row leaves all predicted poses unchanged.}\label{tab:gauge}
+\begin{tabular}{@{}llp{0.52\textwidth}@{}}
+\toprule
+& Insertion & Equivalent parameter change \\\midrule
+G1 & Translation $\vct{v}$ of the base & $\vct{\epsilon}_{\mathrm{trk,rob}}=\vct{v}$; constant $\Delta\theta_k=-\vct{d}_k\cdot\vct{v}$, $k=1,2,3$ \\
+G2 & Rotation $c$ of the base about $\vct{d}_1=\vct{x}$ & $\vct{\alpha}_{\mathrm{trk,rob}}=c\,\vct{x}$; $\vct{\phi}_2=\vct{\phi}_3=-c\,\vct{x}$; constant $\Delta\theta_4=-c$ \\
+G3 & Rotation $c$ about $\vct{x}$ between joints 4 and 5 & constant $\Delta\theta_4=c$; $\vct{\phi}_5=\vct{\phi}_6=-c\,\vct{x}$; $\vct{\alpha}_{\mathrm{we}}=-c\,\vct{x}$ \\
+G4 & Rotation $c$ about $\vct{y}$ between joints 5 and 6 & constant $\Delta\theta_5=c$; $\vct{\phi}_6=-c\,\vct{y}$; $\vct{\alpha}_{\mathrm{we}}=-c\,\vct{y}$, $\vct{\epsilon}_{\mathrm{we}}=100c\,\vct{z}$ \\
+G5 & Rotation $c$ about $\vct{z}$ after joint 6 & constant $\Delta\theta_6=c$; $\vct{\alpha}_{\mathrm{we}}=-c\,\vct{z}$, $\vct{\epsilon}_{\mathrm{we}}=-100c\,\vct{y}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Homing removes all gauges.} Every family in Table~\ref{tab:gauge} contains a constant shift of at least one $\Delta\theta_k$, i.e.\ a common shift of all knot values of joint $k$. With the home knots fixed by Eq.~\eqref{eq:home-knot}, no such shift is possible and the seven null directions disappear. The gauge fixed this way is the physical one: $\{\mathrm{rob}\}$ is the frame in which $\vct{\theta}^*=\vct{0}$ places $\{c\}$ at the origin, so $F_{\mathrm{est,ee}}$ is meaningful relative to the actual base and can be compared with $F^*_{\mathrm{ee}}$, as the handout's accuracy definition requires. Without homing, only gauge-invariant quantities, such as the angles between axes, could be compared with the ground truth.
+
+\paragraph{Excitation.} Beyond the gauges, a parameter is determined only if the data move it. From Table~\ref{tab:jacobian}:
+\begin{itemize}
+\item a stage tilt acts with lever $\theta_k$, so stage $k$ must travel; its conditioning improves with the travel length;
+\item a wrist tilt acts through $(R_k^T-I)$, which vanishes at $\theta_k=0$, so joint $k$ must rotate well away from zero;
+\item a knot value is seen only by samples in the two adjacent intervals, so every interval must contain data, most simply a sample at every knot;
+\item $\vct{\alpha}_{\mathrm{trk,rob}}$ and $\vct{\alpha}_{\mathrm{we}}$ (and $\vct{\epsilon}_{\mathrm{trk,rob}}$ and $\vct{\epsilon}_{\mathrm{we}}$) are separated only when $R_w$ takes at least two non-parallel rotation axes, i.e.\ when at least two wrist joints move.
+\end{itemize}
+Since the error is a sum of single-joint terms (Section~\ref{sec:math-linear}), moving one joint at a time from home, as hint~1(b) suggests, excites every parameter. Sampling the six-dimensional joint space (Method~2) is not needed.
+
+\paragraph{Rank criterion.} Stacking all samples, $\vct{r}\approx J\,\delta\vct{x}+\vct{\nu}$ with $J\in\mathbb{R}^{6n\times p}$. The parameters are identifiable from the collected data if and only if $\rank J=p$. With the home knots free, the null space of $J$ contains the seven directions of Table~\ref{tab:gauge}. The singular values $s_1\geq\dots\geq s_p$ of the weighted Jacobian $WJ$ (Section~\ref{sec:math-propagation}) quantify the conditioning: the standard deviation of the parameter combination along the right singular vector $\vct{v}_i$ is $1/s_i$. Reporting these singular values justifies the parameterization and the choice of poses.
+
+\subsection{Sample spacing}\label{sec:math-spacing}
+\paragraph{Interpolation bound.} Let $h_k$ be the knot spacing of joint $k$ and $\lambda=(\theta-\tau_{k,i})/h_k\in[0,1]$. If the knot values are exact, the bound for linear interpolation of a function with $|\Delta\theta_k'|\leq\omega_k$ gives
+\begin{equation}\label{eq:interp-bound}
+e_k(\theta)\equiv\bigl|\Delta\theta_{\mathrm{est},k}(\theta)-\Delta\theta_k(\theta)\bigr|\leq2\,\omega_kh_k\lambda(1-\lambda)\leq\tfrac12\,\omega_kh_k .
+\end{equation}
+Knots must include both ends of the range: outside the outermost knot the error grows as $\omega_k$ times the distance, without the factor $\tfrac12$. The values $\delta_k$ do not enter Eq.~\eqref{eq:interp-bound}; they only bound the error of ignoring $\Delta\theta_k$ altogether.
+
+\paragraph{Effect on the end-effector.} By Eqs.~\eqref{eq:dpc}, \eqref{eq:alpha-ee} and \eqref{eq:eps-ee}, an error $e_k$ of a stage moves $\{e\}$ by $e_k$ along $\vct{d}_k$, and an error $e_k$ of a wrist joint rotates $\{e\}$ by $e_k$ about its axis and moves it by at most $\norm{\vct{p}_{\mathrm{we}}}e_k=100\,e_k$\,mm. Since the stage axes are orthogonal to first order,
+\begin{equation}\label{eq:interp-ee}
+\norm{\vct{\alpha}_{\mathrm{interp}}}\leq\sum_{k=4}^{6}e_k,\qquad
+\norm{\vct{\epsilon}_{\mathrm{interp}}}\leq\Bigl(\sum_{k=1}^{3}e_k^2\Bigr)^{1/2}+100\sum_{k=4}^{6}e_k .
+\end{equation}
+For given allowances $e^{\max}_k$, Eq.~\eqref{eq:interp-bound} yields the largest admissible spacing $h_k\leq2e^{\max}_k/\omega_k$.
+
+\paragraph{Numbers.} Table~\ref{tab:spacing} evaluates Eq.~\eqref{eq:interp-bound} with $\omega_k=5\times10^{-4}$ (stages) and $5\times10^{-5}$ (wrist). The wrist requirement is weak: even one interval per half range ($h=0.75\pi$) costs less than $6\times10^{-5}$\,rad and $0.006$\,mm. The stages are the binding case: a model with only an offset and a scale per stage (one interval over $600$\,mm) would already use $0.15$\,mm of the $0.2$\,mm budget, whereas $h_k=100$\,mm leaves $0.025$\,mm per stage.
+
+\begin{table}[H]
+\centering\small
+\caption{Worst-case interpolation error $\tfrac12\omega_kh_k$ for several knot spacings.}\label{tab:spacing}
+\begin{tabular}{@{}lcccc@{\hspace{2em}}lccc@{}}
+\toprule
+\multicolumn{5}{@{}l}{Stages, $\omega_k=5\times10^{-4}$} & \multicolumn{4}{l@{}}{Wrist, $\omega_k=5\times10^{-5}$} \\\cmidrule(r{2em}){1-5}\cmidrule(l){6-9}
+$h_k$ (mm) & 600 & 300 & 100 & 50 & $h_k$ (rad) & $0.75\pi$ & $\pi/2$ & $\pi/4$ \\
+$e_k$ (mm) & 0.150 & 0.075 & 0.025 & 0.0125 & $e_k$ ($10^{-5}$\,rad) & 5.9 & 3.9 & 2.0 \\
+& & & & & $100\,e_k$ (mm) & 0.006 & 0.004 & 0.002 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Measurement error propagation}\label{sec:math-propagation}
+\paragraph{Marker noise to pose.} Let $mBee$ have $N$ markers with positions $\tilde{\vct{a}}_k$ relative to their centroid. Linearizing the registration as in Section~\ref{sec:math-linear}, a reading with independent noise $\mathcal{N}(\vct{0},\sigma_b^2I)$ on each marker gives a pose error $\vct{\eta}=[\vct{\alpha};\vct{\epsilon}_{\mathrm{cen}}]$ (rotation, and translation of the centroid) with
+\begin{equation}\label{eq:pose-cov}
+\Cov(\vct{\alpha})=\sigma_b^2M^{-1},\quad M=\sum_k\bigl(\norm{\tilde{\vct{a}}_k}^2I-\tilde{\vct{a}}_k\tilde{\vct{a}}_k^T\bigr),\qquad
+\Cov(\vct{\epsilon}_{\mathrm{cen}})=\frac{\sigma_b^2}{N}I,
+\end{equation}
+and no correlation, because $\sum_k\tilde{\vct{a}}_k=\vct{0}$. The translation of a point at offset $\vct{o}$ from the centroid gains $-\vct{o}\times\vct{\alpha}$, so placing the origin of $\{e\}$ near the centroid minimizes $\vct{\epsilon}_{\mathrm{obs}}$. For a layout with $\sum_k\tilde{\vct{a}}_k\tilde{\vct{a}}_k^T=\tfrac13Nr^2I$ (e.g.\ a regular tetrahedron of radius $r$), $M=\tfrac23Nr^2I$ and
+\begin{equation}\label{eq:pose-std}
+\operatorname{std}(\alpha_i)=\frac{\sigma_b}{r}\sqrt{\frac{3}{2N}},\qquad \operatorname{std}(\epsilon_{\mathrm{cen},i})=\frac{\sigma_b}{\sqrt N}.
+\end{equation}
+With $\sigma_b=0.1$\,mm, $N=4$ and $r=75$\,mm this is $8.2\times10^{-4}$\,rad and $0.05$\,mm per axis and per reading. Each reading draws new noise, so averaging $L_j$ readings at one pose divides both by $\sqrt{L_j}$, at a cost of $\Delta t_{\mathrm{samp}}=0.03$\,s per reading.
+
+\paragraph{Tracker distortion to pose.} The distortion is the same in every reading of a pose, so averaging does not reduce it. Expanding about the marker centroid $\bar{\vct{b}}$, $\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}(\bar{\vct{b}}+\vct{y})\approx\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}(\bar{\vct{b}})+G\vct{y}$ with $G=\nabla\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}(\bar{\vct{b}})$, $\norm{G}\leq\omega^{\mathrm{trk}}_{\mathrm{sys}}$. The registration absorbs the common shift as a translation, $\norm{\vct{\epsilon}_{\mathrm{cen}}}\leq\delta^{\mathrm{trk}}_{\mathrm{sys}}=0.1$\,mm. The rotation fitted to the displacements $G\vct{y}_k$ solves $M\vct{\alpha}=\sum_k\vct{y}_k\times G\vct{y}_k$. For the isotropic layout above, the symmetric part of $G$ contributes nothing and the skew part $\tfrac12(G-G^T)=\sk(\vct{w})$ is recovered exactly, so in the tracker frame
+\begin{equation}\label{eq:trk-rot-bias}
+\vct{\alpha}_{\mathrm{trk}}=\vct{w},\qquad\norm{\vct{\alpha}_{\mathrm{trk}}}\leq\tfrac12\norm{G-G^T}\leq\omega^{\mathrm{trk}}_{\mathrm{sys}}=7.5\times10^{-4}\ \mathrm{rad}.
+\end{equation}
+This bias does not depend on the size of the body: enlarging $mBee$ reduces the random rotation error (Eq.~\eqref{eq:pose-std}) but not this one. An anisotropic layout lets the symmetric part of $G$ leak into $\vct{\alpha}$ and can make the bias larger. The handout bounds only the first derivative of $\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}$, so the bias may differ between poses by up to twice these bounds; only its common part is absorbed by $F_{\mathrm{trk,rob}}$.
+
+\paragraph{Joint repeatability.} The random joint error $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}$ is drawn once per move, so it is not averaged by repeated readings, only by repeated moves. By Table~\ref{tab:jacobian} it adds to each residual a term with covariance $J_{\theta,j}\Sigma_{\mathrm{rnd}}J_{\theta,j}^T$, where $J_{\theta,j}$ collects the distortion columns and $\Sigma_{\mathrm{rnd}}=\diag(\sigma_{k,\mathrm{rnd}}^2)$; its size is $0.005$\,mm per stage and $10^{-4}$\,rad (and $0.01$\,mm at $\{e\}$) per wrist joint.
+
+\paragraph{Pose to parameters.} The random part of the residual of sample $j$ has covariance
+\begin{equation}
+C_j=\frac{1}{L_j}C_{\mathrm{reg}}+J_{\theta,j}\Sigma_{\mathrm{rnd}}J_{\theta,j}^T,\qquad C_{\mathrm{reg}}=\diag\bigl(\sigma_b^2M^{-1},\ \tfrac{\sigma_b^2}{N}I\bigr),
+\end{equation}
+which also fixes the weighting of rotation against translation. The weighted least-squares estimate minimizes $\sum_j\vct{r}_j^TC_j^{-1}\vct{r}_j$; with $W=\diag(C_j^{-1/2})$ and $J$ the stacked Jacobian, the random errors propagate as
+\begin{equation}\label{eq:param-cov}
+\Cov(\hat{\vct{x}})=\bigl(J^TW^2J\bigr)^{-1},\qquad
+\Cov\bigl(\vct{r}(\vct{\theta})\bigr)=J(\vct{\theta})\,\Cov(\hat{\vct{x}})\,J(\vct{\theta})^T
+\end{equation}
+for the predicted pose error at any test configuration $\vct{\theta}$. A systematic error $\vct{b}$ in the observations (the tracker distortion) instead shifts the estimate by $(J^TW^2J)^{-1}J^TW^2\vct{b}$, the weighted projection of $\vct{b}$ onto the model. At the sampled poses the fitted model then reproduces the part of the bias that the model can represent, so the resulting pose error is of the size of the bias itself, Eq.~\eqref{eq:trk-rot-bias}, rather than reduced by averaging.
+
+\paragraph{Noisy knots.} If the knot values carry errors with standard deviations $\sigma_{k,i}$ and $\sigma_{k,i+1}$, the interpolated value at $\lambda$ has variance $(1-\lambda)^2\sigma_{k,i}^2+\lambda^2\sigma_{k,i+1}^2+2\lambda(1-\lambda)c_{i,i+1}\leq\max(\sigma_{k,i},\sigma_{k,i+1})^2$, and its mean-square error is $e_k(\theta)^2$ plus this variance. Interpolation thus never amplifies the knot noise, and the deterministic bound of Eq.~\eqref{eq:interp-bound} and the noise can be budgeted separately.
+
+\subsection{Error budget and calibration time}\label{sec:math-budget}
+\paragraph{Budget.} Table~\ref{tab:budget} collects the contributions to the forward error $\Delta F_{\mathrm{FwdK}}$ at a test configuration and the additional terms of the inverse error $\Delta F_{\mathrm{InvK}}$. The interpolation rows use example spacings ($h_k=100$\,mm for the stages, $h_k=\pi/4$ for the wrist); the random-estimation row is an allowance that the number of readings and poses must meet through Eq.~\eqref{eq:param-cov}. The forward error is evaluated in the tracker frame with the estimated base (notebook Step~9), so the base estimate is part of the model error. The inverse error is measured on the pose actually reached, so it also contains the repeatability $\Delta\theta^{\mathrm{rob}}_{\mathrm{rnd}}$ of the final move, which no calibration can remove (here as an RMS value over the six joints).
+
+\begin{table}[H]
+\centering\small
+\caption{Error budget (worst-case bounds unless marked RMS).}\label{tab:budget}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+Contribution & $\norm{\vct{\alpha}}$ (rad) & $\norm{\vct{\epsilon}}$ (mm) & Basis \\\midrule
+Tracker distortion & $7.5\times10^{-4}$ & $0.100$ & Eq.~\eqref{eq:trk-rot-bias}; origin of $\{e\}$ at the centroid \\
+Stage interpolation, $h_k=100$\,mm & -- & $0.043$ & Eq.~\eqref{eq:interp-ee}, $\sqrt3\times0.025$ \\
+Wrist interpolation, $h_k=\pi/4$ & $0.6\times10^{-4}$ & $0.006$ & Eq.~\eqref{eq:interp-ee}, $3\times2.0\times10^{-5}$ \\
+Random estimation error (allowance) & $1.0\times10^{-4}$ & $0.020$ & Eq.~\eqref{eq:param-cov} \\\midrule
+Forward error, linear sum & $9.1\times10^{-4}$ & $0.169$ & Target $10^{-3}$, $0.2$ \\
+Forward error, root-sum-square & $7.6\times10^{-4}$ & $0.111$ & \\\midrule
+Repeatability of the final move (RMS) & $1.7\times10^{-4}$ & $0.019$ & $\sqrt3\,\sigma_{k,\mathrm{rnd}}$ and lever $100$\,mm \\
+Inverse error, linear sum & $1.08\times10^{-3}$ & $0.188$ & \\
+Inverse error, root-sum-square & $7.8\times10^{-4}$ & $0.112$ & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The budget leads to three conclusions. (i) The tracker distortion dominates: it uses three quarters of the angular target and half of the translational target, and it cannot be averaged away. (ii) The joint distortion is reduced to a minor term once the stages are sampled at about $100$\,mm and the wrist at a fraction of a radian. (iii) The targets are met with margin when the terms are combined as independent errors; with all bounds attained at once, the forward error still meets them and the angular inverse error exceeds the target by about $8\%$. All bounds of the static errors are worst cases, and the tracker term in particular is attained only where the distortion gradient is at its bound.
+
+\paragraph{Calibration time.} The tracker cannot observe during a move, so the elapsed time is
+\begin{equation}\label{eq:time}
+t_{\mathrm{elap}}=\sum_{\text{moves}}\Bigl(t_{\mathrm{settle}}+\max_kT_k(|\Delta\theta_k|)\Bigr)+n_{\mathrm{read}}\,\Delta t_{\mathrm{samp}},
+\end{equation}
+\begin{equation}
+T_k(\Delta)=\begin{cases}\Delta/\dot\theta^{\max}_k+\dot\theta^{\max}_k/\ddot\theta^{\max}_k,&\Delta\geq(\dot\theta^{\max}_k)^2/\ddot\theta^{\max}_k,\\2\sqrt{\Delta/\ddot\theta^{\max}_k},&\text{otherwise,}\end{cases}
+\end{equation}
+with the trapezoidal profile used by the simulator. The travel term dominates. Covering the full range of every joint, as the knots at both ends require, with one joint at a time and a return home after each axis, takes about $3\times24$\,s for the stages ($1200$\,mm of travel each at $50$\,mm/s), $2\times70.7$\,s for joints 4 and 5 ($3\times0.75\pi$\,rad each at $0.1$\,rad/s), and $125.7$\,s for joint 6 ($4\pi$\,rad), about $340$\,s in total. Additional stops cost only $t_{\mathrm{settle}}+\dot\theta^{\max}_k/\ddot\theta^{\max}_k$ (at most $0.15$\,s) plus the readings, so a fine knot spacing is cheap compared with the travel. Because the duration of a move is set by its slowest joint, moving several joints in the same move shares the travel time; this is admissible as long as the stacked Jacobian keeps full rank (Section~\ref{sec:math-identify}), since the model contains every configuration, not only single-axis ones.
+
+\subsection{Improved forward and inverse kinematics}\label{sec:math-ik}
+\paragraph{Forward kinematics.} $\Fun{ImprovedFwdKins}(\vct{\theta})=F_{\mathrm{est,ee}}(\vct{\theta})$ is Eq.~\eqref{eq:actual-fk} evaluated with the estimated parameters: $\theta_{\mathrm{est},k}=\theta_k+\Delta\theta_{\mathrm{est},k}(\theta_k)$ from Eq.~\eqref{eq:knots}, $\vct{d}_{\mathrm{est},k}=R(\vct{\phi}_{\mathrm{est},k})\vct{d}_k$ and $F_{\mathrm{we}}\Delta F_{\mathrm{est,we}}$. Its error $\Delta F_{\mathrm{FwdK}}=(F^*_{\mathrm{ee}})^{-1}F_{\mathrm{est,ee}}$ is the forward error of Table~\ref{tab:budget}; the random joint error is excluded because $F^*_{\mathrm{ee}}$ is evaluated at $\vct{\theta}+\Delta\vct{\theta}_{\mathrm{sys}}(\vct{\theta})$.
+
+\paragraph{Inverse kinematics.} For a target $F$ relative to the base we solve $\vct{g}(\vct{\theta})=\vct{0}$, where $\vct{g}=[\vct{\alpha};\vct{\epsilon}]$ of $F_{\mathrm{est,ee}}(\vct{\theta})^{-1}F$. Tilted axes have no closed-form inverse, so we start from the nominal closed form, $\vct{\theta}^{(0)}=\Fun{InvKins}(F)$, and iterate
+\begin{equation}\label{eq:ik-iter}
+\vct{\theta}^{(i+1)}=\vct{\theta}^{(i)}+J_{\mathrm{est}}(\vct{\theta}^{(i)})^{-1}\vct{g}(\vct{\theta}^{(i)}),
+\end{equation}
+where $J_{\mathrm{est}}=\partial\vct{g}/\partial\vct{\theta}$ is the body Jacobian of the calibrated model. In the nominal model it is, from Table~\ref{tab:jacobian},
+\begin{equation}
+J_0=\begin{bmatrix}0&0&0&T_4\vct{x}&T_5\vct{y}&\vct{z}\\R_w^T\vct{x}&R_w^T\vct{y}&R_w^T\vct{z}&-\vct{p}_{\mathrm{we}}\times T_4\vct{x}&-\vct{p}_{\mathrm{we}}\times T_5\vct{y}&-\vct{p}_{\mathrm{we}}\times\vct{z}\end{bmatrix},
+\qquad|\det J_0|=|\cos\theta_5| .
+\end{equation}
+$J_0$ is block-triangular, and $\det[T_4\vct{x},T_5\vct{y},\vct{z}]=\det[R_5^T\vct{x},\vct{y},\vct{z}]=\cos\theta_5$.
+
+\paragraph{Convergence.} Eq.~\eqref{eq:ik-iter} is Newton's method, which converges quadratically from a sufficiently close start. The start is close: $\vct{g}(\vct{\theta}^{(0)})$ is the difference between the calibrated and the nominal model, at most about $12$\,mm and $0.05$\,rad. A simpler variant keeps the nominal $J_0$ in every step; its error then contracts as $\vct{e}^{(i+1)}\approx(I-J_0^{-1}J_{\mathrm{est}})\vct{e}^{(i)}$, with factor
+\begin{equation}
+q=\norm{J_0^{-1}(J_{\mathrm{est}}-J_0)}\lesssim\norm{J_0^{-1}}\,\bigl(\phi_{\max}+\omega_k+\norm{\vct{\alpha}_{\mathrm{we}}}\bigr)\cdot\mathcal{O}(1),
+\end{equation}
+because the calibrated Jacobian differs from the nominal one only by the tilts, the distortion slopes and the tool error. Away from the wrist singularity $q$ is of order $0.03$, so each step reduces the error about thirtyfold and three or four steps reach $10^{-4}$\,mm. Near $\cos\theta_5=0$ (inside the joint range) $\norm{J_0^{-1}}$ grows without bound: $\theta_4$ and $\theta_6$ are then poorly determined, although the pose error itself can still be made small. A damped step (Levenberg--Marquardt), as in the provided \path{inv_kins}, keeps the iteration stable there. The nominal inverse has two wrist branches; each is refined separately and the branch within the joint limits nearest the current configuration is chosen.
+
+\paragraph{Inverse accuracy.} If the iteration has converged, the commanded $\vct{\theta}$ satisfies $F_{\mathrm{est,ee}}(\vct{\theta})=F$, so the reached pose differs from the target by the forward error at $\vct{\theta}$ plus the repeatability of the move, $J_{\theta}\Delta\vct{\theta}^{\mathrm{rob}}_{\mathrm{rnd}}$. This is the inverse error of Table~\ref{tab:budget}; it is never smaller than the forward error.
 \end{document}
