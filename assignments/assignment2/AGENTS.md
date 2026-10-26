@@ -71,12 +71,13 @@ assignment2/
 - [x] Phase 1 Line-by-line reading（Seg 1–6）
 - [x] Phase 2 Variable table（`report/sections/02_variables.tex`；结论见 course_reference Part 3.4）
 - [ ] **Phase 3 Theory**（当前阶段）→ `report/sections/03_mathematical_approach.tex`
-- [ ] Phase 4 Design & code（src/student/、unit tests）
+- [x] Phase 4 Design & code（src/student/、unit tests）
 - [ ] Phase 5 Results & report（多 seed 结果表、其余章节）
 
 ### Current phase commits（Phase 3；阶段完成后压缩进下方一行）
 - c0c22e1 | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
 - 51e03b2 | 10-26 | Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)
+- TBD | 10-26 | Phase 4: student code, unit tests and executed notebook (single-axis plan, decoupled init, gauge from handout bounds)
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
@@ -87,5 +88,6 @@ assignment2/
 - 命名：全小写、下划线分隔，不用空格和中文。
 - Git：在 assignment2 分支上工作；origin 是个人 fork，upstream 是课程仓库。
 - 本机工具（macOS，Homebrew）：poppler（`pdftoppm`/`pdftotext`，读 PDF 页面和图）、tectonic（编译 LaTeX）。开始工作时用 `which pdftoppm tectonic` 检查；缺失则请用户运行 `brew install poppler tectonic`，agent 不自行安装。
+- 本机工具（Windows）：Python 用 miniforge 的 conda 环境 `cis-a1`（Python 3.11，已装 requirements.txt）；系统 PATH 上没有 `python`，agent 直接调用 `~/miniforge3/envs/cis-a1/python.exe`（如 `~/miniforge3/envs/cis-a1/python.exe -m pytest tests -q`，在 `assignment2/` 下运行），用户在终端先 `conda activate cis-a1`，notebook 的 kernel 选 cis-a1。Bash 工具是 Git Bash（POSIX 语法）。git 的 `core.autocrlf=true`：工作区为 CRLF、提交为 LF，对比文件用 `diff --strip-trailing-cr`。tectonic、`pdftoppm` 尚未安装（`pdftotext` 可用）；需要时请用户运行 `conda install -n cis-a1 -c conda-forge tectonic poppler`，agent 不自行安装。
 - LaTeX 编译（`subfiles`）：`main.tex` 是完整报告（导言区 + `\subfile` 各章）；每个章节文件首尾固定为 `\documentclass[../main.tex]{subfiles}`、`\begin{document}` … `\end{document}`，可借用 `main.tex` 的导言区单独编译。`main.tex`、`sections/`、`figures/` 的相对位置不可改。每次修改 LaTeX 后，agent 在 `report/` 下运行 `mkdir -p build && tectonic --keep-logs --outdir build sections/<章节>.tex`（或 `main.tex` 编整份），修掉错误和 Overfull 后，在侧边文件面板打开 `build/<章节>.pdf` 给用户看。`report/build/` 由根 `.gitignore` 忽略。用户也可用 VS Code 的 LaTeX Workshop（需 MacTeX）。
 - 临时预览（如阶段蒸馏）：写成 `sections/` 下的临时章节文件单独编译，不加入 `main.tex`、不记 log，用户看完即删。

@@ -80,14 +80,27 @@ def test_average_frames_is_a_proper_rotation():
 
 
 def test_refine_marker_body_reduces_layout_error():
-    """TODO: write this test.
+    """A user-defined body (hidden manufacturing error ~0.7 mm per axis) is
+    read 50 times; the refined layout is much closer to the actual one, up
+    to a rigid transform, and the refinement costs 50 * delta_t_samp."""
+    layout = [vct3(60, 0, 0), vct3(-30, 50, 0), vct3(-30, -50, 0), vct3(0, 0, 60), vct3(20, 20, -40)]
+    body = simulation.define_marker_body("ref", layout)
+    in_view = F_TRK_SIDE * vct3(0, 0, 1600)
+    placed = simulation.place_marker_body(body, Frame(Rot(), in_view))
+    trk = simulation.create_tracker("trk", F_TRK_SIDE, seed=3)
+    simulation.add_marker_bodies(trk, [placed])
+    actual = [a.p for a in body.get_actual_marker_positions()]      # ground truth: test only
 
-    Hint: define a body, place it in front of a tracker, measure how far the
-    nominal layout is from body.get_actual_marker_positions() (ground truth,
-    allowed in a test) up to a rigid transform, refine, and show the
-    distance shrank. Also check how much simulated time it cost.
-    """
-    pytest.skip("TODO")
+    def shape_error(est):
+        F = registration.register_points(est, actual)
+        return np.sqrt(np.mean([(F * e - a).norm() ** 2 for e, a in zip(est, actual)]))
+
+    before = shape_error(layout)
+    t0 = simulation.clock.elapsed
+    refined = registration.refine_marker_body(trk, placed, n_readings=50)
+    assert np.isclose(simulation.clock.elapsed - t0, 50 * simulation.constants.SAMPLE_DELTA_T_SEC)
+    assert [vct3(a).vec.tolist() for a in body.nominal_marker_positions] == [r.vec.tolist() for r in refined]
+    assert shape_error(refined) < 0.3 * before
 
 
 # ---------------------------------------------------------------- workflow
@@ -107,9 +120,45 @@ def test_estimate_base_frame_on_synthetic_data():
     assert np.allclose(F_est.p.vec, F_X.p.vec, atol=1e-6)
 
 
-def test_planned_poses_are_visible_and_within_limits():
-    """TODO: write this test for your plan_calibration_poses."""
-    pytest.skip("TODO")
+MBEE_TETRA = [vct3(74.9 * np.array(v) / np.sqrt(3)) for v in ([1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1])]
+F_TRK_SIDE = Frame(Rot(matrix=[[0.9397, 0.0, 0.3420], [0.3420, 0.0, -0.9397], [0.0, 1.0, 0.0]]).normalize(),
+                   vct3(258.6, 1597.5, 200.0))   # side view of the work volume, ~1.7 m away
+
+
+@pytest.mark.parametrize("method", ["single_axis", "concurrent"])
+def test_planned_poses_are_visible_and_within_limits(method):
+    """Every planned pose is within the joint limits and shows all markers
+    (nominal kinematics); every knot of every joint is visited; each stop is
+    repeated the number of times readings_per_stop asks for."""
+    rob = simulation.create_robot("rob", Frame.eye(), seed=0)
+    trk = simulation.create_tracker("trk", F_TRK_SIDE, seed=0)
+    poses = workflow.plan_calibration_poses(rob, trk, MBEE_TETRA, desired_accuracy=1e-3, method=method)
+    for th in poses:
+        assert rob.within_limits(th)
+        F = rob.F_rob * rob.fwd_kins(th)
+        assert trk.is_visible([F * a for a in MBEE_TETRA])
+    visited = np.array(poses)
+    for k, knots in enumerate(workflow.joint_knots(rob)):
+        assert all(np.any(np.isclose(visited[:, k], v)) for v in knots), f"joint {k + 1} misses a knot"
+    n_stage, n_wrist = workflow.readings_per_stop(MBEE_TETRA, 1e-3)
+    runs = [1]
+    for a, b in zip(poses[:-1], poses[1:]):
+        runs[-1:] = [runs[-1] + 1] if np.array_equal(a, b) else [runs[-1], 1]
+    expected = {n_stage, n_wrist, 1} if method == "single_axis" else {max(n_stage, n_wrist), 1}
+    assert set(runs) <= expected
+
+
+def test_plan_rejects_a_tracker_that_cannot_see_the_sweeps():
+    rob = simulation.create_robot("rob", Frame.eye(), seed=0)
+    trk = simulation.create_tracker("trk", Frame(Rot(), vct3(800, 0, -3000)), seed=0)   # looks away
+    with pytest.raises(ValueError):
+        workflow.plan_calibration_poses(rob, trk, MBEE_TETRA, desired_accuracy=1e-3)
+
+
+def test_readings_per_stop_grows_with_accuracy():
+    n_loose = workflow.readings_per_stop(MBEE_TETRA, 2e-3, desired_pos_accuracy=0.4)
+    n_tight = workflow.readings_per_stop(MBEE_TETRA, 1e-3, desired_pos_accuracy=0.2)
+    assert n_tight[0] >= 3 * n_loose[0] and n_tight[1] >= 3 * n_loose[1]
 
 
 def test_measure_home_offsets_matches_encoders():
@@ -149,13 +198,109 @@ def test_improved_inv_kins_round_trip():
         assert metrics.frame_error(F, F_back)[0] < 1e-8
 
 
-def test_fit_recovers_synthetic_parameters():
-    """TODO: write this test.
+def _synthetic_truth(rob, seed):
+    """A model with known non-zero parameters of the handout's size, as the 'actual' robot."""
+    rng = np.random.default_rng(seed)
+    offsets = np.concatenate([rng.uniform(-0.2, 0.2, 3), rng.uniform(-0.01, 0.01, 3)])
+    F_X = random_frame(rng, angle=0.3, dist=300.0)
+    truth = kinematics.ImprovedKinematics(rob, F_X, joint_offsets=offsets)
+    x = truth.initial_params()
+    x[0:6] = 0.0                                                       # base is F_X itself
+    x[6:15] = rng.uniform(-0.014, 0.014, 9)                            # tilts, ||phi_k|| <= 0.02
+    x[15:18], x[18:21] = rng.uniform(-0.005, 0.005, 3), rng.uniform(-0.25, 0.25, 3)
+    at = truth.N_GEOM
+    for k, kn in enumerate(truth.knots):
+        m = len(kn) - 1
+        x[at:at + m] = rng.uniform(-0.1, 0.1, m) if k < 3 else rng.uniform(-0.005, 0.005, m)
+        at += m
+    truth.params = x
+    return truth, offsets, F_X
 
-    Hint: generate CalibrationData from your own model with a known,
-    non-zero parameter vector (no noise), fit from zero, and check that
-    predict_in_tracker agrees with the generating model on new poses. Note that
-    the parameters themselves need not match if your model has a null
-    direction -- compare poses, not parameters.
-    """
-    pytest.skip("TODO")
+
+def _synthetic_data(rob, truth, method="single_axis"):
+    poses = workflow.plan_calibration_poses(rob, None, MBEE_TETRA, 1e-3, method=method, check_visibility=False)
+    data = workflow.CalibrationData()
+    for th in {tuple(t) for t in poses}:
+        data.thetas.append(np.array(th))
+        data.frames.append(truth.predict_in_tracker(np.array(th)))
+    return data
+
+
+def test_decoupled_initial_estimate_is_close_to_the_truth():
+    """The closed-form, rotation-first / translation-second estimate from
+    single-axis sweeps alone (no least squares) is already close: its only
+    approximation is delta_theta at the sweep base taken from the home knot."""
+    rob = simulation.create_robot("rob", Frame.eye(), seed=0)
+    truth, offsets, F_X = _synthetic_truth(rob, seed=11)
+    data = _synthetic_data(rob, truth)
+    F_X_init = F_X * Frame(Rot(vct3(1, 1, 0), angle=0.05), vct3(3, -4, 0))
+    model = kinematics.ImprovedKinematics(rob, F_X_init, joint_offsets=offsets)
+    x0 = model.initial_estimate(data)
+    rng = np.random.default_rng(13)
+    for _ in range(20):
+        th = random_theta(rng)
+        angle, dist = metrics.frame_error(truth.predict_in_tracker(th), model.predict_in_tracker(th, x0))
+        assert angle < 1e-4 and dist < 0.01
+
+
+def test_decoupled_initial_estimate_needs_single_axis_sweeps():
+    rob = simulation.create_robot("rob", Frame.eye(), seed=0)
+    truth, offsets, _ = _synthetic_truth(rob, seed=11)
+    model = kinematics.ImprovedKinematics(rob, Frame.eye(), joint_offsets=offsets)
+    with pytest.raises(ValueError):
+        model.initial_estimate(_synthetic_data(rob, truth, method="concurrent"))
+
+
+@pytest.mark.parametrize("method", ["single_axis", "concurrent"])
+def test_fit_recovers_synthetic_parameters(method):
+    """Noise-free data from a known model on the planned poses: the fit,
+    started from the nominal model at a base frame that is off by ~0.05 rad /
+    5 mm, must reproduce the generating model on new poses with full Jacobian
+    rank, and, in the fit's own gauge (gauge="fixed", as the generating
+    model), the parameters themselves."""
+    rob = simulation.create_robot("rob", Frame.eye(), seed=0)
+    truth, offsets, F_X = _synthetic_truth(rob, seed=11)
+    poses = workflow.plan_calibration_poses(rob, None, MBEE_TETRA, 1e-3, method=method, check_visibility=False)
+    data = workflow.CalibrationData()
+    for th in {tuple(t) for t in poses}:
+        data.thetas.append(np.array(th))
+        data.frames.append(truth.predict_in_tracker(np.array(th)))
+    F_X_init = F_X * Frame(Rot(vct3(1, 1, 0), angle=0.05), vct3(3, -4, 0))
+    model = kinematics.ImprovedKinematics(rob, F_X_init, joint_offsets=offsets)
+    model.fit(data, gauge="fixed")
+    rng = np.random.default_rng(12)
+    for _ in range(20):
+        th = random_theta(rng)
+        angle, dist = metrics.frame_error(truth.predict_in_tracker(th), model.predict_in_tracker(th))
+        assert angle < 1e-8 and dist < 1e-5
+    rank = model.jacobian_rank_report(data)
+    assert rank["rank"] == rank["n_params"]
+    assert np.allclose(model.parameters_report()["axis_tilts"], truth.parameters_report()["axis_tilts"], atol=1e-8)
+
+
+def test_gauge_choice_keeps_tracker_poses_and_respects_the_bounds():
+    """The rotation about d_1 cannot be seen in the data. Generate data from a
+    model whose own gauge lies inside its feasible interval; the fit must
+    reproduce the tracker-frame poses exactly, pick c from the handout's
+    bounds only (tilts <= phi_max, ||alpha_ee|| <= 0.01), and its interval
+    must contain the generating c, so the base-relative rotation error is at
+    most half the interval width."""
+    rob = simulation.create_robot("rob", Frame.eye(), seed=0)
+    truth, offsets, F_X = _synthetic_truth(rob, seed=12)
+    lo, hi = truth.choose_gauge()[1]
+    truth.gauge_c = lo + 0.3 * (hi - lo)
+    data = _synthetic_data(rob, truth)
+    model = kinematics.ImprovedKinematics(rob, F_X, joint_offsets=offsets)
+    info = model.fit(data)
+    m_lo, m_hi = info["gauge_interval"]
+    assert m_lo - 1e-4 <= truth.gauge_c <= m_hi + 1e-4
+    rep = model.parameters_report()
+    assert np.all(np.linalg.norm(rep["axis_tilts"], axis=1) <= simulation.constants.PHI_MAX + 1e-9)
+    assert np.linalg.norm(rep["F_we_twist"][:3]) <= simulation.constants.WE_ALPHA_MAX + 1e-9
+    rng = np.random.default_rng(14)
+    for _ in range(10):
+        th = random_theta(rng)
+        angle, dist = metrics.frame_error(truth.predict_in_tracker(th), model.predict_in_tracker(th))
+        assert angle < 1e-8 and dist < 1e-5
+        angle_base, _ = metrics.frame_error(truth.fwd_kins(th), model.fwd_kins(th))
+        assert angle_base <= 0.5 * (m_hi - m_lo) + 1e-4
