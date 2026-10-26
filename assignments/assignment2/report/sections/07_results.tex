@@ -1,7 +1,7 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 \section{Results}\label{sec:results}
-Sections~\ref{sec:res-cal}--\ref{sec:res-acc} report the saved notebook run (seed~1, single-axis plan). Section~\ref{sec:res-seeds} repeats the pipeline over several seeds and compares the two plans, and Section~\ref{sec:res-base} evaluates the handout's base-frame definition.
+All numbers below come from one saved run of the notebook. Sections~\ref{sec:res-cal}--\ref{sec:res-acc} report the main run (seed~1, single-axis plan). Section~\ref{sec:res-seeds} repeats the pipeline over 25 seeds and compares the two plans, and Section~\ref{sec:res-base} evaluates the handout's base-frame definition (notebook, extended evaluation).
 
 \subsection{Calibration data and time}\label{sec:res-cal}
 \begin{table}[H]
@@ -15,20 +15,20 @@ Readings per stop, stage / wrist & 7 / 68 \\
 Distinct poses / readings & 39 / 1716 \\
 Fit parameters / Jacobian rank & 59 / 59 \\
 Condition number of the weighted Jacobian & $9.1\times10^{3}$ \\
-RMS residual, decoupled start & $4.2\times10^{-4}$\,rad, $0.021$\,mm \\
-RMS residual, after the fit (12 evaluations) & $4.1\times10^{-4}$\,rad, $0.018$\,mm \\\midrule
+RMS residual, decoupled start & $3.8\times10^{-4}$\,rad, $0.021$\,mm \\
+RMS residual, after the fit (9 evaluations) & $3.6\times10^{-4}$\,rad, $0.016$\,mm \\\midrule
 Homing time & 0.4\,s \\
 Diagnostic baseline (Step~6, not used by the fit) & 83.8\,s \\
 Calibration data & 543.3\,s \\
 Total calibration time & 627.5\,s \\
-Testing time (40 nominal and 40 improved moves) & 470.9\,s \\
+Testing time (40 nominal and 40 improved moves) & 470.8\,s \\
 \bottomrule
 \end{tabular}
 \end{table}
-The collection time equals the planned estimate of 543.3\,s. The decoupled start already leaves residuals close to the final ones, and the weakest Jacobian directions are single stage knots. Each complete calibration and evaluation takes about 5\,s of computation, well within the 10-minute limit.
+The collection time equals the planned estimate of 543.3\,s. The decoupled start already leaves residuals close to the final ones, and the weakest Jacobian directions are single stage knots. The complete notebook, including all evaluations of this section, runs in about 4 minutes of computation, within the 10-minute limit.
 
 \subsection{Estimated parameters}\label{sec:res-param}
-Table~\ref{tab:res-param} compares the estimates with the hidden ground truth (validation only). The estimated axes are within $0.0031^\circ$ of the true angles between axes, and the stage axes are within $0.003^\circ$ of their true directions in the tracker frame. The chosen rotation about $\vct{d}_1$ is $c=-0.0152$\,rad, in the admissible interval $[-0.0179,-0.0125]$\,rad.
+Table~\ref{tab:res-param} compares the estimates with the hidden ground truth (validation only). The estimated axes are within $0.0056^\circ$ of the true angles between axes, and the stage axes are within $0.006^\circ$ of their true directions in the tracker frame. The chosen rotation about $\vct{d}_1$ is $c=-0.0152$\,rad, in the admissible interval $[-0.0179,-0.0125]$\,rad.
 
 \begin{table}[H]
 \centering\small
@@ -36,15 +36,15 @@ Table~\ref{tab:res-param} compares the estimates with the hidden ground truth (v
 \begin{tabular}{@{}lrrrrrr@{}}
 \toprule
  & 1 & 2 & 3 & 4 & 5 & 6 \\\midrule
-Joint offset, estimated & 0.0310 & 0.0676 & $-0.0587$ & 0.0074 & 0.0086 & $-0.0080$ \\
-Joint offset $c_k$, true & 0.0253 & 0.0697 & $-0.0583$ & 0.0068 & 0.0080 & $-0.0083$ \\\midrule
+Joint offset, estimated & $0.0210$ & $0.0471$ & $-0.0645$ & $0.0074$ & $0.0086$ & $-0.0080$ \\
+Joint offset $c_k$, true & $0.0253$ & $0.0697$ & $-0.0583$ & $0.0068$ & $0.0080$ & $-0.0083$ \\\midrule
  & $\alpha_x$ & $\alpha_y$ & $\alpha_z$ & $\epsilon_x$ & $\epsilon_y$ & $\epsilon_z$ \\\midrule
-Tool twist $\Delta F_{\mathrm{we}}$, estimated & $-0.0002$ & $-0.0049$ & $-0.0012$ & 0.0613 & $-0.2036$ & $-0.2379$ \\
-Tool twist $\Delta F_{\mathrm{we}}$, true & $-0.0001$ & $-0.0049$ & $-0.0012$ & 0.0581 & $-0.2091$ & $-0.2358$ \\
+Tool twist $\Delta F_{\mathrm{we}}$, estimated & $-0.0002$ & $-0.0049$ & $-0.0012$ & $0.0577$ & $-0.2026$ & $-0.2301$ \\
+Tool twist $\Delta F_{\mathrm{we}}$, true & $-0.0001$ & $-0.0049$ & $-0.0012$ & $0.0581$ & $-0.2091$ & $-0.2358$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-The estimated joint offset is the value at $\theta_k=0$ of the least-squares line through the knot values; the true value $c_k$ is the constant term of the simulator's distortion, whose ripple the line does not represent, so differences of a few $10^{-3}$\,mm are expected.
+The estimated joint offset is the value at $\theta_k=0$ of the least-squares line through the knot values; the true value $c_k$ is the constant term of the simulator's distortion, whose ripple the line does not represent, so differences of a few $0.01$\,mm are expected (here at most $0.023$\,mm).
 
 \subsection{Accuracy}\label{sec:res-acc}
 \begin{table}[H]
@@ -53,14 +53,14 @@ The estimated joint offset is the value at $\theta_k=0$ of the least-squares lin
 \begin{tabular}{@{}lrrrrrc@{}}
 \toprule
  & $N$ & RMS [rad] & Max [rad] & RMS [mm] & Max [mm] & Met \\\midrule
-FwdK, nominal & 729 & $3.24\times10^{-2}$ & $5.17\times10^{-2}$ & 7.447 & 14.925 & no \\
-FwdK, improved & 729 & $1.44\times10^{-4}$ & $2.57\times10^{-4}$ & 0.076 & 0.122 & yes \\
-InvK, nominal & 40 & $3.47\times10^{-2}$ & $5.13\times10^{-2}$ & 7.708 & 13.116 & no \\
-InvK, improved & 40 & $2.06\times10^{-4}$ & $4.12\times10^{-4}$ & 0.076 & 0.119 & yes \\
+FwdK, nominal & 729 & $3.24\times10^{-2}$ & $5.17\times10^{-2}$ & 7.431 & 14.887 & no \\
+FwdK, improved & 729 & $1.27\times10^{-4}$ & $2.06\times10^{-4}$ & 0.069 & 0.121 & yes \\
+InvK, nominal & 40 & $3.47\times10^{-2}$ & $5.12\times10^{-2}$ & 7.691 & 13.088 & no \\
+InvK, improved & 40 & $1.76\times10^{-4}$ & $3.97\times10^{-4}$ & 0.072 & 0.113 & yes \\
 \bottomrule
 \end{tabular}
 \end{table}
-Calibration reduces the maximum errors by a factor of about 200 in rotation and 120 in position. The improved maxima use $26\%$ (forward) and $41\%$ (inverse) of the angular target and about $60\%$ of the position target. The inverse errors are slightly larger than the forward errors because they include the repeatability of the final move.
+Calibration reduces the maximum forward errors by a factor of about 250 in rotation and 120 in position. The improved maxima use $21\%$ (forward) and $40\%$ (inverse) of the angular target and $60\%$ and $57\%$ of the position target. The inverse errors include the repeatability of the final move.
 
 \subsection{Several seeds and the two plans}\label{sec:res-seeds}
 \begin{table}[H]
@@ -69,40 +69,45 @@ Calibration reduces the maximum errors by a factor of about 200 in rotation and 
 \begin{tabular}{@{}lcrrrrrr@{}}
 \toprule
 Plan & Seed & $t_{\mathrm{cal}}$ [s] & $t_{\mathrm{test}}$ [s] & FwdK [rad] & FwdK [mm] & InvK [rad] & InvK [mm] \\\midrule
-single axis & 1 & 528.8 & 435.0 & $1.30\times10^{-4}$ & 0.102 & $3.32\times10^{-4}$ & 0.107 \\
-single axis & 2 & 528.8 & 435.0 & $2.14\times10^{-4}$ & 0.109 & $3.81\times10^{-4}$ & 0.126 \\
-single axis & 3 & 528.8 & 435.0 & $1.79\times10^{-4}$ & 0.094 & $3.37\times10^{-4}$ & 0.093 \\
-single axis & 4 & 528.8 & 435.0 & $1.12\times10^{-4}$ & 0.094 & $4.59\times10^{-4}$ & 0.115 \\
-single axis & 5 & 528.8 & 435.0 & $1.69\times10^{-4}$ & 0.102 & $5.46\times10^{-4}$ & 0.117 \\\midrule
-concurrent & 1 & 442.4 & 435.0 & $2.60\times10^{-4}$ & 0.113 & $4.45\times10^{-4}$ & 0.121 \\
-concurrent & 2 & 442.4 & 435.0 & $2.27\times10^{-4}$ & 0.097 & $4.10\times10^{-4}$ & 0.101 \\
-concurrent & 3 & 442.6 & 435.0 & $2.77\times10^{-4}$ & 0.096 & $3.73\times10^{-4}$ & 0.110 \\
-concurrent & 4 & 442.6 & 435.0 & $1.97\times10^{-4}$ & 0.087 & $3.80\times10^{-4}$ & 0.115 \\
-concurrent & 5 & 442.4 & 435.0 & $1.76\times10^{-4}$ & 0.082 & $3.82\times10^{-4}$ & 0.100 \\
+single axis & 1 & 528.8 & 435.0 & $1.78\times10^{-4}$ & 0.130 & $3.94\times10^{-4}$ & 0.116 \\
+single axis & 2 & 528.8 & 435.0 & $2.34\times10^{-4}$ & 0.099 & $3.78\times10^{-4}$ & 0.094 \\
+single axis & 3 & 528.8 & 435.0 & $2.33\times10^{-4}$ & 0.095 & $4.36\times10^{-4}$ & 0.109 \\
+single axis & 4 & 528.8 & 435.0 & $2.03\times10^{-4}$ & 0.082 & $5.50\times10^{-4}$ & 0.092 \\
+single axis & 5 & 528.8 & 435.0 & $1.35\times10^{-4}$ & 0.131 & $5.25\times10^{-4}$ & 0.128 \\\midrule
+concurrent & 1 & 442.4 & 435.0 & $2.03\times10^{-4}$ & 0.104 & $5.14\times10^{-4}$ & 0.127 \\
+concurrent & 2 & 442.4 & 435.0 & $2.29\times10^{-4}$ & 0.099 & $3.73\times10^{-4}$ & 0.099 \\
+concurrent & 3 & 442.6 & 435.0 & $2.89\times10^{-4}$ & 0.110 & $3.89\times10^{-4}$ & 0.112 \\
+concurrent & 4 & 442.6 & 435.0 & $1.74\times10^{-4}$ & 0.087 & $3.54\times10^{-4}$ & 0.104 \\
+concurrent & 5 & 442.4 & 435.0 & $2.38\times10^{-4}$ & 0.092 & $4.65\times10^{-4}$ & 0.107 \\
 \bottomrule
 \end{tabular}
 \end{table}
-Both plans meet both targets for every seed. In 20 further runs of the single-axis plan (seeds 6--25) the worst errors were $3.8\times10^{-4}$\,rad and $0.160$\,mm forward and $5.6\times10^{-4}$\,rad and $0.142$\,mm inverse. The concurrent plan saves 86\,s with similar accuracy. We keep the single-axis plan: it follows hint~1(b), its sweeps are what the decoupled estimate of Section~\ref{sec:alg-init} requires, and each wrist sweep is observed at one place in the viewing volume, so the tracker-distortion bias is nearly common to the sweep and is absorbed by the base and tool parameters.
+Both plans meet both targets for every seed. In 20 further runs of the single-axis plan (seeds 6--25) all targets are met as well; the worst errors are $2.9\times10^{-4}$\,rad and $0.146$\,mm forward and $5.2\times10^{-4}$\,rad and $0.142$\,mm inverse. The concurrent plan saves 86\,s with similar accuracy. We keep the single-axis plan: it follows hint~1(b), its sweeps are what the decoupled estimate of Section~\ref{sec:alg-init} requires, and each wrist sweep is observed at one place in the viewing volume, so the tracker-distortion bias is nearly common to the sweep and is absorbed by the base and tool parameters.
 
 \subsection{Handout's base-frame definition}\label{sec:res-base}
-The handout defines the forward error relative to the robot base, $(F^*_{\mathrm{ee}}(\vct{\theta}))^{-1}\Fun{ImprovedFwdKins}(\vct{\theta})$. This error contains the error of the unobservable rotation $c$ about $\vct{d}_1$ (Section~\ref{sec:alg-gauge}), which no tracker data can reduce; only the handout's bounds limit it. Table~\ref{tab:res-base} compares the two definitions in separate runs of the same pipeline on 600 random configurations over the full joint ranges.
+The handout defines the forward error relative to the robot base, $(F^*_{\mathrm{ee}}(\vct{\theta}))^{-1}\Fun{ImprovedFwdKins}(\vct{\theta})$. This error contains the error of the unobservable rotation $c$ about $\vct{d}_1$ (Section~\ref{sec:alg-gauge}), which no tracker data can reduce; only the handout's bounds limit it. Table~\ref{tab:res-base} evaluates 600 random configurations over the full joint ranges for seeds 1--8: in the tracker frame, relative to the base with $c$ chosen from the bounds, and relative to the base with the fixed convention $\vct{\phi}_2\cdot\vct{x}=0$ ($c=0$). The last pair of error columns gives the inverse error for 30 targets specified relative to the actual base.
 
 \begin{table}[H]
 \centering\small
-\caption{Maximum forward errors on 600 random full-range configurations: tracker frame and robot base frame.}\label{tab:res-base}
-\begin{tabular}{@{}crrrrr@{}}
+\caption{Maximum errors on random full-range configurations (seeds 1--8; angles in mrad, positions in mm). Targets: $1$\,mrad and $0.2$\,mm.}\label{tab:res-base}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}c*{8}{c}c@{}}
 \toprule
-Seed & Tracker [rad] & Tracker [mm] & Base [rad] & Base [mm] & Interval of $c$ [rad] \\\midrule
-1 & $2.7\times10^{-4}$ & 0.115 & $3.8\times10^{-4}$ & 0.17 & 0.0058 \\
-2 & $2.3\times10^{-4}$ & 0.107 & $8.8\times10^{-4}$ & 0.59 & 0.0060 \\
-3 & $3.6\times10^{-4}$ & 0.098 & $7.0\times10^{-3}$ & 4.86 & 0.0156 \\
-4 & $2.6\times10^{-4}$ & 0.110 & $1.8\times10^{-3}$ & 1.13 & 0.0045 \\
-5 & $3.1\times10^{-4}$ & 0.128 & $5.8\times10^{-4}$ & 0.34 & 0.0046 \\
-6 & $3.9\times10^{-4}$ & 0.109 & $1.3\times10^{-3}$ & 0.77 & 0.0053 \\
-7 & $3.9\times10^{-4}$ & 0.127 & $4.0\times10^{-3}$ & 2.66 & 0.0101 \\
-8 & $2.3\times10^{-4}$ & 0.131 & $2.5\times10^{-3}$ & 1.73 & 0.0141 \\
+ & \multicolumn{6}{c}{FwdK} & \multicolumn{2}{c}{InvK} & \\
+\cmidrule(lr){2-7}\cmidrule(lr){8-9}
+ & \multicolumn{2}{c}{Tracker} & \multicolumn{2}{c}{Base, bounds} & \multicolumn{2}{c}{Base, $c=0$} & \multicolumn{2}{c}{Base} & Interval \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Seed & mrad & mm & mrad & mm & mrad & mm & mrad & mm & of $c$ [mrad] \\\midrule
+1 & 0.23 & 0.143 & 0.33 & 0.110 & 15.6 & 11.64 & 0.45 & 0.089 & 5.3 \\
+2 & 0.21 & 0.127 & 0.87 & 0.556 & 3.4 & 2.45 & 1.00 & 0.485 & 6.1 \\
+3 & 0.24 & 0.089 & 6.97 & 4.863 & 14.8 & 10.50 & 7.07 & 3.926 & 15.7 \\
+4 & 0.33 & 0.135 & 1.88 & 1.129 & 14.9 & 10.41 & 1.89 & 0.978 & 4.5 \\
+5 & 0.26 & 0.109 & 0.57 & 0.312 & 11.8 & 8.75 & 0.63 & 0.237 & 4.6 \\
+6 & 0.35 & 0.134 & 1.39 & 0.790 & 17.3 & 12.74 & 1.44 & 0.698 & 5.3 \\
+7 & 0.23 & 0.125 & 3.93 & 2.713 & 9.2 & 6.46 & 3.98 & 2.474 & 10.1 \\
+8 & 0.26 & 0.118 & 2.59 & 1.736 & 10.0 & 7.29 & 2.62 & 1.334 & 14.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
-In the tracker frame both targets are met over the full joint ranges. In the base frame they are met for seed~1 only: the angular error equals the error of $c$, which is at most half the interval width, and it reaches millimeters at the lever of about $700$\,mm between the base origin and $\{e\}$. The inverse error relative to the base behaves in the same way (seeds 1--3: $4.5\times10^{-4}$, $1.2\times10^{-3}$ and $7.1\times10^{-3}$\,rad). We therefore report the base-frame accuracy as achieved rather than met. Choosing $c$ from the bounds reduced the base-frame errors from $0.003$--$0.017$\,rad, obtained with the fixed convention $\vct{\phi}_2\cdot\vct{x}=0$, to the values in Table~\ref{tab:res-base}.
+In the tracker frame both targets are met over the full joint ranges. Relative to the base they are met for seed~1 only, for the forward and the inverse error alike. The angular error is the error of $c$, at most half the interval width, and it reaches millimeters at the lever of about $700$\,mm between the base origin and $\{e\}$. Choosing $c$ from the handout's bounds reduces the base-frame errors by a factor of 2--47 compared with the fixed convention, but it cannot meet the targets when the bounds leave a wide interval. We therefore report the base-frame accuracy as achieved rather than met.
 \end{document}

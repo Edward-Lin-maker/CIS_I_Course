@@ -8,7 +8,7 @@ The implementation uses Python~3.11 with NumPy for linear algebra and \fn{scipy.
 \begin{enumerate}
 \renewcommand{\labelenumi}{\roman{enumi}.}
 \item The robot base is placed at the workspace origin, $F_{\mathrm{rob}}=\Frame(I,\vct{0})$. A point $\vct{p}$ of the work volume moves by at most $\epsilon^{\max}_{\mathrm{rob}}+\alpha^{\max}_{\mathrm{rob}}\norm{\vct{p}}$ under the base error, so a work volume near the origin keeps this shift small.
-\item The tracker views the work volume from the side, about $1.7$\,m from its center $(840,0,200)$\,mm. The pose was chosen by a grid search over viewing directions and distances so that every calibration stop of both plans keeps more than $200$\,mm of clearance from the faces of the viewing volume beyond that worst-case shift. All 729 test poses of Step~9 are visible.
+\item The tracker views the work volume from the side, about $1.7$\,m from its center $(840,0,200)$\,mm. The pose was chosen by a grid search over viewing directions and distances so that every calibration stop of both plans stays inside the viewing volume with a clearance larger than that worst-case shift, which \fn{plan_calibration_poses} checks for every stop. All 729 test poses of Step~9 are visible.
 \item $mBee$ is a regular tetrahedron of radius $r=74.9$\,mm, just inside $\norm{\vct{a}^*_k}\leq75$\,mm, centred on the origin of $\{e\}$. The layout is isotropic, $M=\tfrac23Nr^2I$, so the reading noise is the same about every axis and the symmetric part of the tracker-distortion gradient does not enter the rotation (Eqs.~\eqref{eq:pose-std} and \eqref{eq:trk-rot-bias}). With $N=4$ one reading has $\sigma_{\mathrm{rot}}=8.2\times10^{-4}$\,rad and $\sigma_{\mathrm{pos}}=0.05$\,mm per axis. The largest admissible radius minimizes the random error; the distortion bias does not depend on the size.
 \item No other marker body is defined. The tracker does not jiggle, so its frame is a fixed reference and needs no reference body, and $mBee$ needs no refinement because its layout is exact.
 \end{enumerate}
@@ -70,7 +70,7 @@ with the nominal kinematics, where $\operatorname{avg}$ is the chordal mean of \
 \item \textit{Translation (pivot calibration).} With the rotations known, all wrist-sweep observations satisfy $R_j\vct{s}+\vct{P}=\vct{p}_j$, a linear least-squares problem for the tool offset $\vct{s}$ in $\{e\}$ and the wrist center $\vct{P}$ in the tracker frame. They give $\vct{\epsilon}_{\mathrm{we}}$ and the base translation.
 \item The joint values at the stops are interpolated onto the knots; the home knots keep their measured values.
 \end{enumerate}
-On noise-free data this estimate is within $10^{-4}$\,rad and $0.01$\,mm of the generating model; on simulated data its residuals are $4\times10^{-4}$\,rad and $0.02$\,mm RMS, against $0.018$\,rad and $3.5$\,mm for the nominal model.
+On noise-free data this estimate is within $10^{-4}$\,rad and $0.01$\,mm of the generating model. On simulated data (25 seeds) its RMS residuals are $(3.4$--$4.6)\times10^{-4}$\,rad and $0.017$--$0.026$\,mm, against $0.014$--$0.023$\,rad and $2.5$--$4.9$\,mm for the nominal geometry, and already close to those after the fit.
 
 \subsection{Weighted least-squares fit (Step~8)}\label{sec:alg-fit}
 \noindent\textit{Main tasks.} \fn{fit} refines the decoupled estimate over the full model Eq.~\eqref{eq:actual-fk}.
@@ -79,7 +79,7 @@ On noise-free data this estimate is within $10^{-4}$\,rad and $0.01$\,mm of the 
 \item \textit{Parameters.} $\vct{x}$ holds the base twist about $F_{\mathrm{init,trk,rob}}$ (6), the tilts (9: two for each of $\vct{d}_3,\vct{n}_4,\vct{n}_5,\vct{n}_6$ and the $z$-component for $\vct{d}_2$), the tool twist (6) and the knot values $c_{k,i}$ other than the home knots (38), 59 in all. $\Delta\theta_{\mathrm{est},k}$ is piecewise linear in the knot values, Eq.~\eqref{eq:knots}, and extrapolated linearly beyond the end knots.
 \item \textit{Residual.} For sample $j$, $\vct{r}_j=[\vct{\alpha}_j;\vct{\epsilon}_j]$ of $(F_{\mathrm{est,trk,rob}}F_{\mathrm{est,ee}}(\vct{\theta}_j))^{-1}F_{\mathrm{obs,trk,mBee},j}$, Eq.~\eqref{eq:residual}, with $\vct{\alpha}_j$ from $\log$ of the rotation. The rotation and translation parts are divided by $\sigma_{\mathrm{rot}}$ and $\sigma_{\mathrm{pos}}$; the repeatability term of the covariance in Section~\ref{sec:math-propagation} is omitted, which changes the relative weights by less than $2\%$.
 \item \textit{Merging.} Samples with the same command are averaged and weighted by $\sqrt{n}$, which gives the same least-squares problem with 39 instead of 1716 residual blocks.
-\item \textit{Solver.} \fn{least_squares} (trust-region reflective, Jacobian scaling, tolerances $10^{-12}$) starts from the decoupled estimate and converges in 10--20 evaluations.
+\item \textit{Solver.} \fn{least_squares} (trust-region reflective, Jacobian scaling, tolerances $10^{-12}$) starts from the decoupled estimate and converges in 9--19 evaluations over 25 seeds.
 \item \textit{Rank.} \fn{jacobian_rank_report} differentiates the weighted residuals by central differences and reports the singular values; their inverses are the standard deviations of the parameter combinations along the right singular vectors, Eq.~\eqref{eq:param-cov}.
 \end{enumerate}
 

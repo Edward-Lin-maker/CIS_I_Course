@@ -12,7 +12,7 @@ Location & Responsibility \\\midrule
 \endfirsthead
 \toprule Location & Responsibility \\\midrule
 \endhead
-\fn{notebooks/assignment2_template.ipynb} & Defines the scene (Step~1), builds the simulation, runs the unit tests, homes the robot, plans and collects the calibration data, fits the improved kinematics, evaluates them (Steps~9--10), and compares plans over several seeds. \\\midrule
+\fn{notebooks/assignment2_template.ipynb} & Defines the scene (Step~1), builds the simulation, runs the unit tests, homes the robot, plans and collects the calibration data, fits the improved kinematics, evaluates them (Steps~9--10), compares plans over several seeds, and runs the extended evaluation (25 seeds; full joint ranges and the base-frame definition). \\\midrule
 \fn{src/student/metrics.py} & Pose-error metric $\Delta F=F_a^{-1}F_b$ and error statistics. \\\midrule
 \fn{src/student/registration.py} & Point-set registration, frame averaging and optional marker-body refinement. \\\midrule
 \fn{src/student/workflow.py} & Homing, pose planning, data collection, simulated-time estimate and the nominal base estimate. \\\midrule
@@ -104,6 +104,8 @@ The notebook reports
 \setlength{\itemsep}{2pt}
 \item \textbf{Calibration:} home offsets, plan size and simulated collection time, fit residuals, Jacobian rank, the chosen rotation about $\vct{d}_1$ and the estimated parameters with their ground-truth comparison;
 \item \textbf{Evaluation:} forward and inverse errors of the nominal and improved kinematics, and the simulated testing time;
-\item \textbf{Several seeds:} calibration time, testing time and maximum errors for both plans and five seeds.
+\item \textbf{Several seeds:} calibration time, testing time and maximum errors for both plans and five seeds;
+\item \textbf{Extended evaluation:} worst errors and fit statistics over seeds 1--25, and, for seeds 1--8, forward and inverse errors on random full-range configurations in the tracker frame and relative to the robot base.
 \end{itemize}
+The complete notebook runs in about 4 minutes.
 \end{document}
