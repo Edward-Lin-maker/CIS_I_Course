@@ -139,7 +139,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: filled 7c01a97 (pushed), added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/main.tex, report/sections/02_variables.tex, ../../.gitignore
 
-### TBD | 2026-10-25 22:44 | "Phase 2 done: subfiles build, Part 3.4 clarifications, reference cleanup" | not pushed
+### 037ed94 | 2026-10-25 22:44 | "Phase 2 done: subfiles build, Part 3.4 clarifications, reference cleanup" | pushed
 - Agent: Claude Code (Opus 5.5)
 - Changes:
   - report/main.tex, report/sections/*.tex: switched to subfiles; main.tex is the full report (\subfile per chapter; graphicspath also ../figures/); every chapter wraps itself in \documentclass[../main.tex]{subfiles} and compiles alone

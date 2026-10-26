@@ -80,7 +80,7 @@ assignment2/
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
 - Phase 1 Line-by-line reading | 2026-10-23 ~ 10-25 | Claude Code / Claude desktop (Opus 5.5) | commits: dcf54bf, cd9aad0, fb2aed1, fddae14, 57a2718, dc3ef9b, 7c01a97
-- Phase 2 Variable table | 2026-10-25 | Claude Code (Opus 5.5) | commits: 1d78b39, TBD
+- Phase 2 Variable table | 2026-10-25 | Claude Code (Opus 5.5) | commits: 1d78b39, 037ed94
 
 ## 7. 其他
 - 命名：全小写、下划线分隔，不用空格和中文。
