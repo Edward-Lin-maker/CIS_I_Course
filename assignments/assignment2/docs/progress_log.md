@@ -218,3 +218,13 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: added TBD line for this commit
   - docs/progress_log.md: Pending merged into this block
 - Files: AGENTS.md, docs/progress_log.md, notebooks/assignment2_template.ipynb, report/sections/04_algorithmic_approach.tex, report/sections/05_program_structure.tex, report/sections/06_validation.tex, report/sections/07_results.tex
+
+### TBD | 2026-10-26 17:34 | "Report: explain the unseeded reading noise (Sections 6.3, 7)" | not pushed
+- Agent: Claude Code (Opus 5.5), branch assignment2-gy
+- Changes:
+  - report/sections/06_validation.tex: Limitations: the seed fixes the robot errors, the repeatability draws and the tracker distortion field, but the simulator draws the reading noise from NumPy's unseeded global generator, so repeated runs of one seed differ slightly; reported numbers come from one saved run; the spread over 25 seeds stays within the targets; label sec:val-limits
+  - report/sections/07_results.tex: intro sentence on the unseeded reading noise, pointing to Section 6.3
+  - code and notebook unchanged (the saved run meets the targets)
+  - AGENTS.md: section 6: added TBD line for this commit
+  - docs/progress_log.md: Pending merged into this block
+- Files: AGENTS.md, docs/progress_log.md, report/sections/06_validation.tex, report/sections/07_results.tex

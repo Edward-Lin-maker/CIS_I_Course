@@ -81,6 +81,7 @@ assignment2/
 - 1ed6048 | 10-26 | Tests: collect_calibration_data and estimate_plan_time
 - 86379d8 | 10-26 | Report: Sections 4-7 (algorithm, program structure, validation, results)
 - 339e2e6 | 10-26 | Notebook extended evaluation; report numbers from one saved run
+- TBD | 10-26 | Report: explain the unseeded reading noise (Sections 6.3, 7)
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
