@@ -168,7 +168,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
 
-### TBD | 2026-10-31 21:26 | "Phase 3: rewrite Section 3 (frames, least squares, starting values, identifiability); notation cleanup" | not pushed
+### daa6f9c | 2026-10-31 21:26 | "Phase 3: rewrite Section 3 (frames, least squares, starting values, identifiability); notation cleanup" | pushed
 - Agent: Claude Code (Opus 5.5)
 - Changes:
   - report/sections/03_mathematical_approach.tex: rewritten and reordered by need: problem formulation (goal and unknowns tables; robot and observation models written out); calibration model (knots, parameter table); least squares with Gauss-Newton and its two conditions; starting values from single-joint motions (relative frame T*_j, stage translation, wrist rotation about the wrist center, Steps A-C, travel to distortion, homing as absolute reference, base configuration with error bound); identifiability (unobservable turn about x, directions removed by homing, convention, choice of c from the handout bounds); improved kinematics. Derivations in homogeneous frame form, separating the actual pose from the SVD observation, with the observation error written explicitly. First-order error model, gauge table, spacing table, error propagation, budget and time model removed from this section
