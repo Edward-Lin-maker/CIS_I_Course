@@ -167,3 +167,13 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: added TBD line for this commit (Phase 3)
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
+
+### TBD | 2026-10-31 21:26 | "Phase 3: rewrite Section 3 (frames, least squares, starting values, identifiability); notation cleanup" | not pushed
+- Agent: Claude Code (Opus 5.5)
+- Changes:
+  - report/sections/03_mathematical_approach.tex: rewritten and reordered by need: problem formulation (goal and unknowns tables; robot and observation models written out); calibration model (knots, parameter table); least squares with Gauss-Newton and its two conditions; starting values from single-joint motions (relative frame T*_j, stage translation, wrist rotation about the wrist center, Steps A-C, travel to distortion, homing as absolute reference, base configuration with error bound); identifiability (unobservable turn about x, directions removed by homing, convention, choice of c from the handout bounds); improved kinematics. Derivations in homogeneous frame form, separating the actual pose from the SVD observation, with the observation error written explicitly. First-order error model, gauge table, spacing table, error propagation, budget and time model removed from this section
+  - report/sections/02_variables.tex: notation only from the handout, code or AGENTS.md section 4: base F_X (F*_X, F̂_X), estimates with ^, observation F̂_{m,j}, b_{k,j}, θ_encoders, F*_ee(θ) with the encoder argument, full handout symbols for joint errors; shorthand removed; frames and simulator-state tables and user-body rows removed
+  - docs/course_reference.md: Part 3.3 rewritten to match Section 2 (auxiliary symbols left out); Parts 3.1, 3.2 and 3.4 symbols updated
+  - AGENTS.md: section 2: auxiliary symbols stay in LaTeX only; formulas in chat use $$...$$, inline $...$ only for single symbols; section 4: no self-made notation; section 6: added TBD line for this commit
+  - docs/progress_log.md: added this block
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex

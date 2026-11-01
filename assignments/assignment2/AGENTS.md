@@ -11,13 +11,13 @@
 ## 2. 工作准则（必须遵守）
 - 回答用中文。**除本文件外，所有文件一律用英文**（reference、log、报告、代码、注释），保留讲义和题目原文的术语与记号。
 - 代码用 Python（numpy）。回答简洁，先给结论再给推导。
-- 对话中的公式用 Unicode 写在 `代码格式` 里（如 `‖Δa_{m,k}‖ ≤ δ_markers`），不用 `$…$`；LaTeX 只用于 `.tex` 文件。
+- 对话中的公式：独立公式用 `$$…$$`（App 可渲染）；行内 `$…$` 渲染不稳定，只用于单个符号（如 `$\theta^*_k$`），纯数字不加 `$`，含运算、等号或函数的式子一律写成独立公式；不用 `\[…\]`。多步推导可写成临时预览章节编译后查看（见第 7 节）。
 - **不得修改 `assignment2/` 以外的任何文件**（包括仓库根目录的 `.gitignore`、`src/`、`assignment1/`），只读可以。唯一例外：根 `.gitignore` 中忽略 `report/build/` 的一行（用户同意）。
 - **默认只回答问题。** 写 LaTeX、改代码、建立或修改文件、读仓库代码、运行命令，都只在用户明确要求时才做。例外：原文没写的内容可直接查本地仓库，不必另行请求（见第 3 节）。
 - **先理论后应用。** 先完成理论推导（LaTeX），再做场景设计、标定流程和代码。不要提前设计流程或写代码。
 - 节省 token：只读当前任务需要的文件或章节，不要整篇读报告或整份 PDF；需要公式或参数时先查 `docs/course_reference.md`。
 - 忠实原文：题目要求以 `docs/2026_assignment_2.pdf` 为准；原文未给的数值写 "not specified"；原文的笔误和不一致保留原写法并单独标注，不擅自修正。
-- 撰写报告的 notation 时，同步更新 `course_reference.md` 的 Part 3.3（只记记号、含义和代码变量；推导只写在 LaTeX，不进 reference）。发现原文疑似笔误：先在对话中提出并给出建议改法，用户确认后记入 `course_reference.md` Part 3.2（原文 → 改为，一行）。阶段结束时，把对话中得到的非显然澄清和阶段性结论蒸馏（每条先写依据再写结论，不写推断、不写显而易见的内容），经用户确认后记入 Part 3.4。
+- 撰写报告的 notation（第 2 节）时，同步更新 `course_reference.md` 的 Part 3.3（只记记号、含义和代码变量；推导只写在 LaTeX，不进 reference）。推导中引入的辅助记号（如 β_k、γ、J、knot、各步骤的中间量）只写在 LaTeX，不记入 reference。发现原文疑似笔误：先在对话中提出并给出建议改法，用户确认后记入 `course_reference.md` Part 3.2（原文 → 改为，一行）。阶段结束时，把对话中得到的非显然澄清和阶段性结论蒸馏（每条先写依据再写结论，不写推断、不写显而易见的内容），经用户确认后记入 Part 3.4。
 - 报告只写符合报告逻辑的内容（问题、方法、推导、假设、结果）。对话中的问答、澄清和讨论过程不写进报告，也不为此加脚注或强调性说明；原文笔误只在影响推导或实现时才在报告中简要说明。
 
 ## 3. 文件索引
@@ -52,6 +52,7 @@ assignment2/
 - 误差乘在哪一侧按题目原文：F_tracker、F_we、F_ee 为右乘 F* = F·ΔF；F_mB、F_rob 为左乘 F* = ΔF·F。
 - 上标 * 表示真实值，^ 表示估计值，无标记表示名义值（沿用 A1）。
 - 题目 p3 中 F*_we 的误差符号与 p5 精度指标的 ΔF_ee 同名，报告里前者记为 ΔF_we。
+- 不自造简写或新记号：记号只取自题目原文、notebook/代码，或本节约定（如底座相对 tracker 用代码名 F_X）。推导中必须新设的辅助量在 LaTeX 中首次出现处定义。
 
 ## 5. 日志与 Git 流程
 - **开始工作前**：先 `git pull`（可能在多台电脑上协作），并检查本机工具（见第 7 节）。
@@ -77,6 +78,7 @@ assignment2/
 ### Current phase commits（Phase 3；阶段完成后压缩进下方一行）
 - c0c22e1 | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
 - 51e03b2 | 10-26 | Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)
+- TBD | 10-31 | Phase 3: rewrite Section 3 (frames, least squares, starting values, identifiability); notation cleanup
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
