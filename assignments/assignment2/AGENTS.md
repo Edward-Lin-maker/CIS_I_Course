@@ -83,7 +83,7 @@ assignment2/
 - c0c22e1 | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
 - 51e03b2 | 10-26 | Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)
 - daa6f9c | 10-31 | Phase 3: rewrite Section 3 (frames, least squares, starting values, identifiability); notation cleanup
-- TBD | 11-01 | Phase 3: clarify single-joint calibration derivations and notation
+- 1982fbf | 11-01 | Phase 3: clarify single-joint calibration derivations and notation
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
