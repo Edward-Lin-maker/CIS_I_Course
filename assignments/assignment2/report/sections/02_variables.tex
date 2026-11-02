@@ -6,7 +6,8 @@
 \subsection{Conventions}
 \begin{itemize}
 \item Bold lowercase symbols are 3-vectors; lengths in mm, angles in rad. $F=\Frame(R,\vct{p})$, $F\vct{x}=R\vct{x}+\vct{p}$, $\sk(\vct{u})\vct{v}=\vct{u}\times\vct{v}$; small errors $\Delta F=\Frame(I+\sk(\vct{\alpha}),\vct{\epsilon})$.
-\item Unmarked: nominal. $^*$: actual (hidden). $\hat{\ }$: our estimate. Poses with one subscript keep the handout's meaning: $F_{\mathrm{tracker}}$, $F_{\mathrm{rob}}$ relative to the workspace, $F_m$ relative to the tracker, $F_{\mathrm{ee}}$ relative to the robot base.
+\item The rotation $R$ and translation $\vct{p}$ of a pose $F$ carry exactly the same subscripts, superscripts and prediction marks as $F$. For example, $F_{m,\mathrm{obs},j}=\Frame(R_{m,\mathrm{obs},j},\vct{p}_{m,\mathrm{obs},j})$.
+\item Unmarked: nominal. $^*$: actual (hidden). Subscript $\mathrm{obs}$: observation; $\mathrm{est}$: estimated parameter. A hat denotes a pose predicted by the kinematic model for given joint values. Poses with one subscript keep the handout's meaning: $F_{\mathrm{tracker}}$, $F_{\mathrm{rob}}$ relative to the workspace, $F_m$ relative to the tracker, $F_{\mathrm{ee}}$ relative to the robot base.
 \item $F_X$ is the robot base relative to the tracker, the name used in the repository (\path{workflow.estimate_base_frame}). The handout gives this frame no symbol.
 \item $j$ indexes calibration samples (as \path{data.thetas[j]}), $k$ joints or markers. Superscripts $\mathrm{rob}$ and $\mathrm{trk}$ separate the robot's errors from the tracker's, as in the handout.
 \item $mBee$ coincides with the end-effector frame, so its pose relative to the base is $F_{\mathrm{ee}}$ (the handout's $F_{mBee}$). The tool-mounting error $\Delta F_{\mathrm{ee}}(\vct{\eta}_{\mathrm{ee}})$ of the handout is written $\Delta F_{\mathrm{we}}$, because $\Delta F_{\mathrm{ee}}$ also names the end-effector error in the accuracy definition.
@@ -24,22 +25,22 @@ Symbol & Meaning & Repository variable \\\midrule
 \tgroup{3}{Frames}
 $F_{\mathrm{tracker}}$ & Tracker pose relative to the workspace; exact. & \path{F_trk} \\\midrule
 $F_{\mathrm{rob}}$, $F^*_{\mathrm{rob}}$ & Nominal and actual robot base pose relative to the workspace. & \path{rob.F_rob}; \path{ground_truth_parameters()["F_rob_actual"]} \\\midrule
-$F^*_X$, $\hat F_X$ & Actual and estimated base pose relative to the tracker, $F^*_X=F_{\mathrm{tracker}}^{-1}F^*_{\mathrm{rob}}$. $\hat F_X$ denotes every estimate of it; the text states which (baseline or starting value with the nominal kinematics, or the final fit). & \path{F_X_baseline}, \path{F_X_nom}, \path{improved.base_frame()} \\\midrule
-$\hat F_{m,j}$ & Pose of $mBee$ reported by the tracker in sample $j$: SVD registration of the reported markers, an estimate of $F^*_XF^*_{\mathrm{ee}}(\vct{\theta}_j)$ (the handout's $F_m=\Fun{MostRecentObservedFrame}$). & \path{data.frames[j]} \\\midrule
+$F^*_X$, $F_{X,\mathrm{est}}$ & Actual and estimated base pose relative to the tracker, $F^*_X=F_{\mathrm{tracker}}^{-1}F^*_{\mathrm{rob}}$. $F_{X,\mathrm{est}}$ denotes every estimate of it; the text states which (baseline or starting value with the nominal kinematics, or the final fit). & \path{F_X_baseline}, \path{F_X_nom}, \path{improved.base_frame()} \\\midrule
+$F_{m,\mathrm{obs},j}$ & Pose of $mBee$ reported by the tracker in sample $j$: SVD registration of the reported markers, an estimate of $F^*_XF^*_{\mathrm{ee}}(\vct{\theta}_j)$ (the handout's $F_m=\Fun{MostRecentObservedFrame}$). & \path{data.frames[j]} \\\midrule
 \tgroup{3}{Robot chain}
 $F_{\mathrm{ee}}(\vct{\theta})$ & Nominal end-effector pose relative to the base, $\Fun{FwdKins}(\vct{\theta})$. & \path{rob.fwd_kins(theta)} \\\midrule
 $F^*_{\mathrm{ee}}(\vct{\theta})$ & Actual end-effector pose relative to the actual base when the encoders read $\vct{\theta}$. & \path{rob.actual_ee_pose(theta)} (in the workspace) \\\midrule
-$\hat F_{\mathrm{ee}}(\vct{\theta})$ & Calibrated pose, $\Fun{ImprovedFwdKins}(\vct{\theta})$; its inverse is $\Fun{ImprovedInvKins}$. & \path{improved.fwd_kins}, \path{improved.inv_kins} \\\midrule
+$\hat F_{\mathrm{ee}}(\vct{\theta})$ & Predicted calibrated pose, $\Fun{ImprovedFwdKins}(\vct{\theta})$; its inverse is $\Fun{ImprovedInvKins}$. & \path{improved.fwd_kins}, \path{improved.inv_kins} \\\midrule
 $F_c$, $F_{\mathrm{cw}}$, $F_w$, $F_{\mathrm{we}}$ & Links of the chain: stage translation, $\Frame(I,[500,0,0]^T)$, wrist rotation, $\Frame(I,[100,0,0]^T)$. & Inside \path{rob.fwd_kins}; \path{Robot.F_CW}, \path{Robot.F_WE} \\\midrule
 $\vct{d}_k$, $\vct{d}^*_k$, $k=1,\dots,6$ & Nominal and actual axis directions; stages for $k\leq3$, wrist for $k\geq4$ (the handout also writes the wrist axes as $\vct{n}_{k-3}=\vct{d}_k$). & \path{Robot.AXES}; \path{ground_truth_parameters()["axes"]} \\\midrule
-$\hat{\vct{\phi}}_k$, $\Delta\hat\theta^{\mathrm{rob}}_{k,\mathrm{sys}}$, $\Delta\hat F_{\mathrm{we}}$ & Estimated axis tilts, joint distortion and tool error. & \path{improved.params}, \path{improved.parameters_report()} \\\midrule
+$\vct{\phi}_{k,\mathrm{est}}$,\newline $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}$,\newline $\Delta F_{\mathrm{we},\mathrm{est}}$ & Estimated axis tilts, joint distortion and tool error. & \path{improved.params}, \path{improved.parameters_report()} \\\midrule
 \tgroup{3}{Joints, markers and time}
 $\vct{\theta}$, $\vct{\theta}^*$ & Encoder values (equal to the last command) and physical joint values. & \path{rob.state().theta}; \path{rob._theta_star} \\\midrule
 $\vct{\theta}_j$ & Commanded joint values of sample $j$. & \path{data.thetas[j]} \\\midrule
 $\vct{\theta}_{\mathrm{encoders}}$ & Encoder values returned by $\Fun{HomeRobot}$. & Return of \path{rob.home_robot()} \\\midrule
 $\theta^{\min}_k$, $\theta^{\max}_k$, $\dot\theta^{\max}_k$, $\ddot\theta^{\max}_k$ & Joint range, speed and acceleration limits. & \path{rob.theta_min}, \dots, \path{rob.theta_ddot_max} \\\midrule
 $\vct{a}^*_k$ & Marker positions of $mBee$ in the end-effector frame; exact. & \path{mbee_local_positions} \\\midrule
-$\vct{b}_{k,j}$, $\vct{b}^*_{k,j}$ & Reported and actual tracker-frame position of $mBee$ marker $k$ in sample $j$. & \path{obs["mBee"].markers[k]} \\\midrule
+$\vct{b}_{k,\mathrm{obs},j}$, $\vct{b}^*_{k,j}$ & Reported and actual tracker-frame position of $mBee$ marker $k$ in sample $j$. & \path{obs["mBee"].markers[k]} \\\midrule
 $t_{\mathrm{elap}}$, $\Delta t_{\mathrm{samp}}$, $t_{\mathrm{settle}}$ & Simulated elapsed time, time per tracker observation, settling time per move. & \path{clock.elapsed}, \path{SAMPLE_DELTA_T_SEC}, \path{T_SETTLE} \\\midrule
 \tgroup{3}{Accuracy}
 $\Delta F_{\mathrm{FwdK}}$; $\vct{\alpha}_{\mathrm{FwdK}}$, $\vct{\epsilon}_{\mathrm{FwdK}}$ & Forward error and its rotation and translation. & \path{metrics.frame_error} \\\midrule
@@ -84,8 +85,8 @@ $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}$ & $\theta^*_k=\theta_k+\Delta\the
 $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}$ & Same equation; a function of $\theta_k$ & $|\cdot|\leq\delta^{\mathrm{rob}}_{k,\mathrm{sys}}=0.2\,\mathrm{mm}$ / $0.01$; $|d\cdot/d\theta_k|\leq\omega^{\mathrm{rob}}_{k,\mathrm{sys}}=5\times10^{-4}$ / $5\times10^{-5}$ & Once per seed; smooth & \path{DELTA_SYS}, \path{OMEGA_SYS} \\\midrule
 $\vct{\phi}_k$, $2\leq k\leq6$ & $\vct{d}^*_k=R(\vct{\phi}_k)\vct{d}_k$, $\vct{\phi}_k\perp\vct{d}_k$ & $\norm{\vct{\phi}_k}\leq\phi_{\max}=0.02$ & Once per seed & \path{PHI_MAX} \\\midrule
 $\Delta F_{\mathrm{we}}$; $\vct{\alpha}_{\mathrm{we}}$, $\vct{\epsilon}_{\mathrm{we}}$ & $F^*_{\mathrm{we}}=F_{\mathrm{we}}\Delta F_{\mathrm{we}}$ & $\norm{\vct{\alpha}_{\mathrm{we}}}\leq0.01$; $\norm{\vct{\epsilon}_{\mathrm{we}}}\leq0.5\,\mathrm{mm}$ & Once per seed & \path{WE_ALPHA_MAX}, \path{WE_EPS_MAX} \\\midrule
-$\vct{\epsilon}_b$ & $\vct{b}^*=\vct{b}+\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}(\vct{b})+\vct{\epsilon}_b$ & $\mathcal{N}(\vct{0},\sigma_b^2I)$, $\sigma_b=0.1\,\mathrm{mm}$ & Every marker, every observation & \path{SENSOR_NOISE_STD} \\\midrule
-$\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}(\vct{b})$ & Same equation & $\norm{\cdot}\leq\delta^{\mathrm{trk}}_{\mathrm{sys}}=0.1\,\mathrm{mm}$; $\norm{\nabla\cdot}\leq\omega^{\mathrm{trk}}_{\mathrm{sys}}=7.5\times10^{-4}$ & Once per tracker; smooth & \path{TRACKER_SYS_MAX_MM}, \path{TRACKER_SYS_GRAD_MAX} \\\midrule
+$\vct{\epsilon}_b$ & $\begin{aligned}[t]\vct{b}^*&=\vct{b}_{\mathrm{obs}}\\&\quad+\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}(\vct{b}_{\mathrm{obs}})\\&\quad+\vct{\epsilon}_b\end{aligned}$ & $\mathcal{N}(\vct{0},\sigma_b^2I)$, $\sigma_b=0.1\,\mathrm{mm}$ & Every marker, every observation & \path{SENSOR_NOISE_STD} \\\midrule
+$\vct{\epsilon}^{\mathrm{trk}}_{\mathrm{sys}}(\vct{b}_{\mathrm{obs}})$ & Same equation & $\norm{\cdot}\leq\delta^{\mathrm{trk}}_{\mathrm{sys}}=0.1\,\mathrm{mm}$; $\norm{\nabla\cdot}\leq\omega^{\mathrm{trk}}_{\mathrm{sys}}=7.5\times10^{-4}$ & Once per tracker; smooth & \path{TRACKER_SYS_MAX_MM}, \path{TRACKER_SYS_GRAD_MAX} \\\midrule
 Accuracy targets & $\Delta F_{\mathrm{FwdK}}$, $\Delta F_{\mathrm{InvK}}$ over the work volume & $\norm{\vct{\alpha}}\leq10^{-3}$; $\norm{\vct{\epsilon}}\leq0.2\,\mathrm{mm}$ & -- & \path{TARGET_ANG_ERR_RAD}, \path{TARGET_POS_ERR_MM} \\
 \bottomrule
 \end{longtable}

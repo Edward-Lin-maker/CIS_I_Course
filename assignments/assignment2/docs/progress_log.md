@@ -177,3 +177,16 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 2: auxiliary symbols stay in LaTeX only; formulas in chat use $$...$$, inline $...$ only for single symbols; section 4: no self-made notation; section 6: added TBD line for this commit
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
+
+### TBD | 2026-11-01 23:50 | "Phase 3: clarify single-joint calibration derivations and notation" | not pushed
+- Agent: Codex (model not exposed)
+- Changes:
+  - Reorganize the mathematical approach around observations, finite calibration parameters, single-joint initialization and joint least-squares refinement; introduce each derivation where it is used.
+  - Distinguish observed poses (obs), estimated parameters (est), actual values (*) and kinematic pose predictions (hat); use matching F/R/p indices and synchronize the notation table and course reference.
+  - Represent joint distortion by values at selected encoder positions; clarify interpolation, shared parameters and the conservative interpolation-error bound.
+  - Specify per-joint homing references and sample indices; derive relative motion directly from marker coordinates without T, S, F_R or redundant travel notation.
+  - Derive wrist-axis and stage-direction least-squares fits and SVD solutions, physical angle/travel estimates, and exact ideal-plus-error residual relations; distinguish ideal, actual and observed motion with one flowchart.
+  - Retain held-joint and tracker errors, derive shared-reference statistics and held-joint pose-error propagation, and distinguish pose-noise scales from bounds on fitted-axis accuracy. Phase 3 remains in progress.
+  - Update AGENTS.md with symbol-first explanations, first-principles ordering and pose-component notation; condense Pending into this commit record.
+- Validation: Both edited standalone LaTeX sections compile without warnings and changed pages were visually checked; the full report compiles with existing bibliography-spacing and duplicate-page-anchor warnings. git diff --check passes.
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex

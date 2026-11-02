@@ -11,6 +11,9 @@
 ## 2. 工作准则（必须遵守）
 - 回答用中文。**除本文件外，所有文件一律用英文**（reference、log、报告、代码、注释），保留讲义和题目原文的术语与记号。
 - 代码用 Python（numpy）。回答简洁，先给结论再给推导。
+- 数学表述中，指代已有数学量时必须附上对应符号：优先直接用符号；需要文字解释时，用“文字说明 + 符号”。不要自创名称或仅用含糊的文字、代词指代数学量（如 end-effector factor）；沿用原文或已定义的术语与符号。
+- 数学解释优先用已有符号、公式、具体向量／矩阵及前后对照直接展示关系；能用这些表达清楚时，就不用大段文字。文字只简短说明必要的含义、条件和逻辑连接，尽量不新增符号，不为替代文字而另造记号。
+- **按第一性原理编排**：从当前要解决的问题和已知关系出发，逐步推导下一步；只有当前推导确实需要时，才引入定义、符号、假设、辅助量和误差分析。没有必要提前说的内容一律等用到再说，不为后文预先堆放材料。除目标等必要概述外，每项内容都应说明“为何此时需要”。同时保持顺读、减少回看；必要时就近重述关键关系，不要只给公式编号让读者翻找。
 - 对话中的公式：独立公式用 `$$…$$`（App 可渲染）；行内 `$…$` 渲染不稳定，只用于单个符号（如 `$\theta^*_k$`），纯数字不加 `$`，含运算、等号或函数的式子一律写成独立公式；不用 `\[…\]`。多步推导可写成临时预览章节编译后查看（见第 7 节）。
 - **不得修改 `assignment2/` 以外的任何文件**（包括仓库根目录的 `.gitignore`、`src/`、`assignment1/`），只读可以。唯一例外：根 `.gitignore` 中忽略 `report/build/` 的一行（用户同意）。
 - **默认只回答问题。** 写 LaTeX、改代码、建立或修改文件、读仓库代码、运行命令，都只在用户明确要求时才做。例外：原文没写的内容可直接查本地仓库，不必另行请求（见第 3 节）。
@@ -48,9 +51,10 @@ assignment2/
 
 ## 4. 记号约定
 - Taylor 记法：F = Frame(R, p)，F·b = Rb + p；F_{x,y} 表示 y 相对 x 的位姿。
+- F 的旋转块、平移块分别用 R、p 表示，上下标与对应的 F 完全一致；不使用 1:3,4 或 1:3,1:3 等数字分块索引。
 - 小误差：ΔR(α) ≈ I + sk(α)，ΔF = Frame(ΔR(α), ε)。
 - 误差乘在哪一侧按题目原文：F_tracker、F_we、F_ee 为右乘 F* = F·ΔF；F_mB、F_rob 为左乘 F* = ΔF·F。
-- 上标 * 表示真实值，^ 表示估计值，无标记表示名义值（沿用 A1）。
+- 上标 * 表示真实值；下标 obs 表示观测值，est 表示估计参数；hat 专用于给定关节值后由运动学模型预测的位姿（如 \hat F_ee(θ) = ImprovedFwdKins(θ)），不用于 tracker 观测或估计参数；无标记表示名义值或尚待估计的模型量，以首次定义为准。
 - 题目 p3 中 F*_we 的误差符号与 p5 精度指标的 ΔF_ee 同名，报告里前者记为 ΔF_we。
 - 不自造简写或新记号：记号只取自题目原文、notebook/代码，或本节约定（如底座相对 tracker 用代码名 F_X）。推导中必须新设的辅助量在 LaTeX 中首次出现处定义。
 
@@ -79,6 +83,7 @@ assignment2/
 - c0c22e1 | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
 - 51e03b2 | 10-26 | Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)
 - daa6f9c | 10-31 | Phase 3: rewrite Section 3 (frames, least squares, starting values, identifiability); notation cleanup
+- TBD | 11-01 | Phase 3: clarify single-joint calibration derivations and notation
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
