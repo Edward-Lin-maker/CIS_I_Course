@@ -178,7 +178,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
 
-### TBD | 2026-11-01 23:50 | "Phase 3: clarify single-joint calibration derivations and notation" | not pushed
+### 1982fbf | 2026-11-01 23:50 | "Phase 3: clarify single-joint calibration derivations and notation" | pushed
 - Agent: Codex (model not exposed)
 - Changes:
   - Reorganize the mathematical approach around observations, finite calibration parameters, single-joint initialization and joint least-squares refinement; introduce each derivation where it is used.
