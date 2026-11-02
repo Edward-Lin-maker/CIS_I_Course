@@ -191,7 +191,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 - Validation: Both edited standalone LaTeX sections compile without warnings and changed pages were visually checked; the full report compiles with existing bibliography-spacing and duplicate-page-anchor warnings. git diff --check passes.
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
 
-### TBD | 2026-11-02 13:54 | "Phase 3: base parameters relative to the nominal base F_X" | not pushed
+### e0f1083 | 2026-11-02 13:54 | "Phase 3: base parameters relative to the nominal base F_X" | pushed
 - Agent: Claude Code (Opus 5.5)
 - Changes:
   - report/sections/03_mathematical_approach.tex: base parameters alpha_X, epsilon_X are a correction to the nominal base F_X = F_tracker^-1 F_rob instead of a starting estimate; F_X,est kept for estimates only
