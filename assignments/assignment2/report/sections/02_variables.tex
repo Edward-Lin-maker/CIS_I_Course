@@ -8,7 +8,7 @@
 \item Bold lowercase symbols are 3-vectors; lengths in mm, angles in rad. $F=\Frame(R,\vct{p})$, $F\vct{x}=R\vct{x}+\vct{p}$, $\sk(\vct{u})\vct{v}=\vct{u}\times\vct{v}$; small errors $\Delta F=\Frame(I+\sk(\vct{\alpha}),\vct{\epsilon})$.
 \item The rotation $R$ and translation $\vct{p}$ of a pose $F$ carry exactly the same subscripts, superscripts and prediction marks as $F$. For example, $F_{m,\mathrm{obs},j}=\Frame(R_{m,\mathrm{obs},j},\vct{p}_{m,\mathrm{obs},j})$.
 \item Unmarked: nominal. $^*$: actual (hidden). Subscript $\mathrm{obs}$: observation; $\mathrm{est}$: estimated parameter. A hat denotes a pose predicted by the kinematic model for given joint values. Poses with one subscript keep the handout's meaning: $F_{\mathrm{tracker}}$, $F_{\mathrm{rob}}$ relative to the workspace, $F_m$ relative to the tracker, $F_{\mathrm{ee}}$ relative to the robot base.
-\item $F_X$ is the robot base relative to the tracker, the name used in the repository (\path{workflow.estimate_base_frame}). The handout gives this frame no symbol.
+\item $F_X$ is the robot base relative to the tracker, the name used in the repository (\path{workflow.estimate_base_frame}); the handout gives this frame no symbol. The repository's \path{F_X_nom} is not the nominal $F_X$: it is an estimate from the observations computed with the nominal kinematics.
 \item $j$ indexes calibration samples (as \path{data.thetas[j]}), $k$ joints or markers. Superscripts $\mathrm{rob}$ and $\mathrm{trk}$ separate the robot's errors from the tracker's, as in the handout.
 \item $mBee$ coincides with the end-effector frame, so its pose relative to the base is $F_{\mathrm{ee}}$ (the handout's $F_{mBee}$). The tool-mounting error $\Delta F_{\mathrm{ee}}(\vct{\eta}_{\mathrm{ee}})$ of the handout is written $\Delta F_{\mathrm{we}}$, because $\Delta F_{\mathrm{ee}}$ also names the end-effector error in the accuracy definition.
 \end{itemize}
@@ -25,7 +25,7 @@ Symbol & Meaning & Repository variable \\\midrule
 \tgroup{3}{Frames}
 $F_{\mathrm{tracker}}$ & Tracker pose relative to the workspace; exact. & \path{F_trk} \\\midrule
 $F_{\mathrm{rob}}$, $F^*_{\mathrm{rob}}$ & Nominal and actual robot base pose relative to the workspace. & \path{rob.F_rob}; \path{ground_truth_parameters()["F_rob_actual"]} \\\midrule
-$F^*_X$, $F_{X,\mathrm{est}}$ & Actual and estimated base pose relative to the tracker, $F^*_X=F_{\mathrm{tracker}}^{-1}F^*_{\mathrm{rob}}$. $F_{X,\mathrm{est}}$ denotes every estimate of it; the text states which (baseline or starting value with the nominal kinematics, or the final fit). & \path{F_X_baseline}, \path{F_X_nom}, \path{improved.base_frame()} \\\midrule
+$F_X$, $F^*_X$, $F_{X,\mathrm{est}}$ & Nominal, actual and estimated base pose relative to the tracker, $F_X=F_{\mathrm{tracker}}^{-1}F_{\mathrm{rob}}$, $F^*_X=F_{\mathrm{tracker}}^{-1}F^*_{\mathrm{rob}}$. $F_{X,\mathrm{est}}$ denotes every estimate of it; the text states which. & \path{F_trk.inv() * rob.F_rob}; \path{F_X_baseline}, \path{F_X_nom}, \path{improved.base_frame()} \\\midrule
 $F_{m,\mathrm{obs},j}$ & Pose of $mBee$ reported by the tracker in sample $j$: SVD registration of the reported markers, an estimate of $F^*_XF^*_{\mathrm{ee}}(\vct{\theta}_j)$ (the handout's $F_m=\Fun{MostRecentObservedFrame}$). & \path{data.frames[j]} \\\midrule
 \tgroup{3}{Robot chain}
 $F_{\mathrm{ee}}(\vct{\theta})$ & Nominal end-effector pose relative to the base, $\Fun{FwdKins}(\vct{\theta})$. & \path{rob.fwd_kins(theta)} \\\midrule

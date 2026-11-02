@@ -108,14 +108,14 @@ The last block stacks one scalar $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.31\textwidth}>{\raggedright\arraybackslash}p{0.46\textwidth}>{\raggedright\arraybackslash}p{0.15\textwidth}@{}}
 \toprule
 Parameters & Meaning & Count \\\midrule
-$\vct{\alpha}_X$, $\vct{\epsilon}_X$ & change of the base about its starting estimate $F_{X,\mathrm{est}}$: $F_X(\vct{x})=F_{X,\mathrm{est}}\Frame\bigl(R(\vct{\alpha}_X),\vct{\epsilon}_X\bigr)$ & 6 \\
+$\vct{\alpha}_X$, $\vct{\epsilon}_X$ & correction of the base about its nominal value $F_X$: $F_X(\vct{x})=F_X\Frame\bigl(R(\vct{\alpha}_X),\vct{\epsilon}_X\bigr)$ & 6 \\
 $t_{k,1}$, $t_{k,2}$, $k=2,\dots,6$ & tilts $\vct{\phi}_k=t_{k,1}\vct{v}_{k,1}+t_{k,2}\vct{v}_{k,2}$, with unit vectors $\vct{v}_{k,1},\vct{v}_{k,2}\perp\vct{d}_k$ & 10 \\
 $\vct{\alpha}_{\mathrm{we}}$, $\vct{\epsilon}_{\mathrm{we}}$ & tool error $\Delta F_{\mathrm{we}}$ & 6 \\
 $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_k^{(l)})$ & distortion of joint $k$ at the selected encoder position $\theta_k^{(l)}$ & $\sum_{k=1}^{6}(L_k+1)$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-The base parameters $\vct{\alpha}_X$ and $\vct{\epsilon}_X$ describe a correction to a starting estimate $F_{X,\mathrm{est}}$, computed with the nominal kinematics (\path{F_X_nom}). For a given trial vector $\vct{x}$, the base correction, axis tilts, tool error and distortion values $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_k^{(l)})$ stored in $\vct{x}$ are shared by all predictions. For example, the first two observations are compared with
+The base parameters $\vct{\alpha}_X$ and $\vct{\epsilon}_X$ describe a correction to the nominal base $F_X=F_{\mathrm{tracker}}^{-1}F_{\mathrm{rob}}$. For a given trial vector $\vct{x}$, the base correction, axis tilts, tool error and distortion values $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_k^{(l)})$ stored in $\vct{x}$ are shared by all predictions. For example, the first two observations are compared with
 \begin{equation*}
 \begin{aligned}
 F_{m,\mathrm{obs},1}&\approx F_X(\vct{x})\hat F_{\mathrm{ee}}(\vct{\theta}_1;\vct{x}),\\

@@ -190,3 +190,13 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - Update AGENTS.md with symbol-first explanations, first-principles ordering and pose-component notation; condense Pending into this commit record.
 - Validation: Both edited standalone LaTeX sections compile without warnings and changed pages were visually checked; the full report compiles with existing bibliography-spacing and duplicate-page-anchor warnings. git diff --check passes.
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
+
+### TBD | 2026-11-02 13:54 | "Phase 3: base parameters relative to the nominal base F_X" | not pushed
+- Agent: Claude Code (Opus 5.5)
+- Changes:
+  - report/sections/03_mathematical_approach.tex: base parameters alpha_X, epsilon_X are a correction to the nominal base F_X = F_tracker^-1 F_rob instead of a starting estimate; F_X,est kept for estimates only
+  - report/sections/02_variables.tex: base row lists nominal F_X, actual F*_X and estimate F_X,est with code variables; Conventions note that the repository's F_X_nom is an estimate from the observations with the nominal kinematics
+  - docs/course_reference.md: Part 3.3 base line synchronized
+  - AGENTS.md: section 6: added TBD line for this commit
+  - docs/progress_log.md: added this block
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
