@@ -113,7 +113,7 @@ def main():
     directory = ROOT / 'tests/data'
     directory.mkdir(exist_ok=True)
     with (directory / 'kinematics_sensitivity_runs.csv').open('w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     summary = []
@@ -126,7 +126,7 @@ def main():
             item[metric + '_std'] = float(np.std(numbers, ddof=1))
         summary.append(item)
     with (directory / 'kinematics_sensitivity_summary.csv').open('w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=list(summary[0]))
+        writer = csv.DictWriter(f, fieldnames=list(summary[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(summary)
     fig, axes = plt.subplots(2, 3, figsize=(10, 5.5), constrained_layout=True)

@@ -231,12 +231,24 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 - Files: AGENTS.md, docs/progress_log.md, src/student/, tests/test_student.py, tests/test_kinematics_validation.py, tests/kinematics_sensitivity.py, tests/data/, notebooks/assignment2_template.ipynb, report/main.tex, report/sections/01_introduction.tex, report/sections/03_mathematical_approach.tex through 07_results.tex, report/figures/kinematics_sensitivity.pdf, report/figures/kinematics_sensitivity.png
 
 
-### TBD | 2026-11-03 03:52 | "fix: include controlled validation datasets" | not pushed
+### 9a283d7 | 2026-11-03 03:52 | "fix: include controlled validation datasets" | pushed
 - Agent: Codex (model not exposed)
 - Changes:
   - Explicitly track the controlled sensitivity CSV datasets required by the notebook; the course root .gitignore ignores CSV files globally, so these two known generated datasets are added by exact path.
   - Fill the preceding work commit hash and pushed status; preserve the root ignore rules.
 - Files: AGENTS.md, docs/progress_log.md, tests/data/kinematics_sensitivity_runs.csv, tests/data/kinematics_sensitivity_summary.csv
+
+
+### TBD | 2026-11-03 04:00 | "chore: finalize code submission packaging" | not pushed
+- Agent: Codex (model not exposed)
+- Changes:
+  - Preserve the full assignment2 branch and publish a separate assignment2_code branch from course main 0723d0b (code commits 4f9addc, cb4a5ff).
+  - Code submission has only main's README.md, notebooks/, requirements.txt, src/ and tests/ at the assignment2 top level; no AGENTS, CLAUDE, reference, progress-log, report, LaTeX or report-file dependency.
+  - Retain identical production modules, 81 tests and required CSV data; adapt optional plotting to draw from CSV without report artifacts and provide submission run instructions.
+  - Explicit LF output in both CSV drivers and datasets; numeric contents unchanged. Root ignore rules are unchanged.
+  - Create local report/build/assignment2_code.zip from the published branch, containing the main-based repository and all course dependencies.
+- Validation: isolated main-based worktree passes 81 tests; its real Jupyter run completes all 16 code cells with no errors in 123.236 s and displays the controlled plot. Archive contents and required dependency/data files verified. The source branch keeps the previously documented base-frame accuracy limitations.
+- Files: AGENTS.md, docs/progress_log.md, tests/kinematics_sensitivity.py, tests/data/kinematics_sensitivity_runs.csv, tests/data/kinematics_sensitivity_summary.csv
 
 
 ## Imported source history: assignment2-gy

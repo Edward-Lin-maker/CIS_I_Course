@@ -80,8 +80,9 @@ assignment2/
 - [ ] **Phase 5 Results & report**（当前阶段；多 seed 结果表、其余章节）
 
 ### Current phase commits（Phase 5）
-- TBD | 11-03 | Phase 4: integrate calibrated kinematics and independent validation
+- 9a283d7 | 11-03 | Phase 4: integrate calibrated kinematics and independent validation
 - TBD | 11-03 | fix: include controlled validation datasets
+- TBD | 11-03 | chore: finalize code submission packaging
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
