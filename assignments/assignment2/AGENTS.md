@@ -64,7 +64,7 @@ assignment2/
 - **每次 commit 之前**（用户说"更新 log"，或让 agent 代为 commit 时）：
   1. 在 Commits 区找到最后一个号为 `TBD` 的块，用 `git log -1 --format='%h %ad %s'` 等命令查出它对应的 commit，补上号，同时把第 6 节 Current phase commits 里对应的 `TBD` 改成该 hash；用 `git log origin/assignment2..HEAD` 判断各块是否已 push，并更新状态。
   2. 新建一个块，号写 `TBD`，把 Pending 里的条目归并进去，然后清空 Pending。
-  3. 更新本文件第 6 节：在 Current phase commits 小节末尾追加一行 `- TBD | MM-DD | <commit message>`，并勾选已完成的项。阶段完成时，把该小节压缩成 Completed phases 里的一行，只列 hash，详情查 log。
+  3. 更新本文件第 6 节：在 Current phase commits 小节末尾追加一行 `- 2b43b5b | MM-DD | <commit message>`，并勾选已完成的项。阶段完成时，把该小节压缩成 Completed phases 里的一行，只列 hash，详情查 log。
   4. 日志、本文件和工作改动放进同一个 commit 一起提交。
 - 块的格式：`### <hash|TBD> | YYYY-MM-DD HH:MM | "<commit message>" | <pushed|not pushed|—>`，下面写 Agent、Changes、Files。
 - 只有在最后一次提交之后，才单独提交一个 `log: fill hash for <hash>` 来补上最后一个号（同时把第 6 节里对应的 `TBD` 改成该 hash）；`log:` 开头的 commit 不记入日志。
@@ -81,13 +81,14 @@ assignment2/
 
 ### Current phase commits（Phase 5）
 - TBD | 11-03 | Phase 4: integrate calibrated kinematics and independent validation
+- TBD | 11-03 | fix: include controlled validation datasets
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
 - Phase 1 Line-by-line reading | 2026-10-23 ~ 10-25 | Claude Code / Claude desktop (Opus 5.5) | commits: dcf54bf, cd9aad0, fb2aed1, fddae14, 57a2718, dc3ef9b, 7c01a97
 - Phase 2 Variable table | 2026-10-25 | Claude Code (Opus 5.5) | commits: 1d78b39, 037ed94
 - Phase 3 Theory | 2026-10-25 ~ 2026-11-03 | Claude / Codex | commits: c0c22e1, 51e03b2, daa6f9c, 1982fbf, e0f1083, 9723f45
-- Phase 4 Design & code | 2026-11-03 | Codex | commits: TBD
+- Phase 4 Design & code | 2026-11-03 | Codex | commits: 2b43b5b
 
 ## 7. 其他
 - 命名：全小写、下划线分隔，不用空格和中文。

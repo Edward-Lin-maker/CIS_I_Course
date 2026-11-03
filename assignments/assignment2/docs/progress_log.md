@@ -215,7 +215,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/03_mathematical_approach.tex
 
 
-### TBD | 2026-11-03 03:51 | "Phase 4: integrate calibrated kinematics and independent validation" | not pushed
+### 2b43b5b | 2026-11-03 03:51 | "Phase 4: integrate calibrated kinematics and independent validation" | pushed
 - Agent: Codex (model not exposed)
 - Changes:
   - Integrate student modules, tests, notebook and report Sections 4-7 from assignment2-gy 62df0a6, preserving the current theory and merging compatible Windows guidance.
@@ -229,6 +229,14 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - Tracker-frame evaluated cases meet targets. Base-relative precision is not met for all seeds; a separate fixed-noise run has 1254/4800 forward and 68/240 inverse poses meeting both limits.
   - Full report compiles with no undefined references or overfull boxes; only pre-existing bibliography/anchor warnings remain. Experimental CSV aggregates and inverse failure counts were checked.
 - Files: AGENTS.md, docs/progress_log.md, src/student/, tests/test_student.py, tests/test_kinematics_validation.py, tests/kinematics_sensitivity.py, tests/data/, notebooks/assignment2_template.ipynb, report/main.tex, report/sections/01_introduction.tex, report/sections/03_mathematical_approach.tex through 07_results.tex, report/figures/kinematics_sensitivity.pdf, report/figures/kinematics_sensitivity.png
+
+
+### TBD | 2026-11-03 03:52 | "fix: include controlled validation datasets" | not pushed
+- Agent: Codex (model not exposed)
+- Changes:
+  - Explicitly track the controlled sensitivity CSV datasets required by the notebook; the course root .gitignore ignores CSV files globally, so these two known generated datasets are added by exact path.
+  - Fill the preceding work commit hash and pushed status; preserve the root ignore rules.
+- Files: AGENTS.md, docs/progress_log.md, tests/data/kinematics_sensitivity_runs.csv, tests/data/kinematics_sensitivity_summary.csv
 
 
 ## Imported source history: assignment2-gy
