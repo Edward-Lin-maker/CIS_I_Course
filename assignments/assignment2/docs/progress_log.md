@@ -202,7 +202,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
 
 
-### TBD | 2026-11-03 02:26 | "Phase 3: complete calibration theory and error analysis" | not pushed
+### 9723f45 | 2026-11-03 02:26 | "Phase 3: complete calibration theory and error analysis" | pushed
 - Agent: Codex (model not exposed)
 - Changes:
   - Complete the user-reviewed mathematical approach and mark Phase 3 finished; Phase 4 is next.
