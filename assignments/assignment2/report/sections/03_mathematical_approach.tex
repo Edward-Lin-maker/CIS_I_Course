@@ -748,18 +748,18 @@ Accepted trial & $\lambda\leftarrow\max(\lambda/10,10^{-12})$ \\
 Damping-loop exit & Residual decreases or $\lambda>10^6$ \\
 Maximum iterations per branch & $50$ \\
 Residual-norm tolerance & $10^{-10}$ \\
-Wrapped angles & $\theta_4,\theta_6\in[-\pi,\pi)$ \\
+Angle wrapping & Only for an out-of-limit candidate; verify the resulting pose \\
 \bottomrule
 \end{tabular}
 \caption{Numerical controls for inverse kinematics.}
 \end{table}
-Return the in-limit branch nearest the supplied seed, or the current command when no seed is supplied:
+Return the converged in-limit branch nearest the supplied seed, using the current command as the seed when none is supplied:
 \begin{equation*}
 \vct{\theta}_{\mathrm{return}}
 =\underset{\substack{\text{refined in-limit}\\\text{nominal wrist branches}}}{\arg\min}
 \norm{\vct{\theta}-\vct{\theta}_{\mathrm{seed}}}.
 \end{equation*}
-Raise an error if no refined branch is within limits. An in-limit return is not separately tested against the residual tolerance after the iteration limit.
+Check $\norm{\vct{g}(\vct{\theta})}\leq\mathrm{tol}$ after any angle wrapping and reject candidates that fail. Preserve already in-limit encoder angles because their fitted distortions need not be $2\pi$-periodic. Raise an error if no candidate satisfies both limits and the residual tolerance.
 
 \subsection{Error analysis and parameter uncertainty}\label{sec:math-errors}
 The following analysis distinguishes exact cancellations, random-noise reduction and errors retained in the fitted parameters.

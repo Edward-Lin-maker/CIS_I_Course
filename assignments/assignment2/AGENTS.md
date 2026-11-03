@@ -76,21 +76,23 @@ assignment2/
 - [x] Phase 1 Line-by-line reading（Seg 1–6）
 - [x] Phase 2 Variable table（`report/sections/02_variables.tex`；结论见 course_reference Part 3.4）
 - [x] Phase 3 Theory→ `report/sections/03_mathematical_approach.tex`
-- [ ] **Phase 4 Design & code**（当前阶段；src/student/、unit tests）
-- [ ] Phase 5 Results & report（多 seed 结果表、其余章节）
+- [x] Phase 4 Design & code（src/student/、unit tests）
+- [ ] **Phase 5 Results & report**（当前阶段；多 seed 结果表、其余章节）
 
-### Current phase commits（Phase 4）
-- None yet.
+### Current phase commits（Phase 5）
+- TBD | 11-03 | Phase 4: integrate calibrated kinematics and independent validation
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
 - Phase 1 Line-by-line reading | 2026-10-23 ~ 10-25 | Claude Code / Claude desktop (Opus 5.5) | commits: dcf54bf, cd9aad0, fb2aed1, fddae14, 57a2718, dc3ef9b, 7c01a97
 - Phase 2 Variable table | 2026-10-25 | Claude Code (Opus 5.5) | commits: 1d78b39, 037ed94
 - Phase 3 Theory | 2026-10-25 ~ 2026-11-03 | Claude / Codex | commits: c0c22e1, 51e03b2, daa6f9c, 1982fbf, e0f1083, 9723f45
+- Phase 4 Design & code | 2026-11-03 | Codex | commits: TBD
 
 ## 7. 其他
 - 命名：全小写、下划线分隔，不用空格和中文。
 - Git：在 assignment2 分支上工作；origin 是个人 fork，upstream 是课程仓库。
 - 本机工具（macOS，Homebrew）：poppler（`pdftoppm`/`pdftotext`，读 PDF 页面和图）、tectonic（编译 LaTeX）。开始工作时用 `which pdftoppm tectonic` 检查；缺失则请用户运行 `brew install poppler tectonic`，agent 不自行安装。
+- Windows 环境（仅 Windows 适用）：使用 miniforge 的 `cis-a1`（Python 3.11，requirements.txt）；Git Bash 中可直接调用 `~/miniforge3/envs/cis-a1/python.exe`，notebook kernel 选 `cis-a1`。若 `core.autocrlf=true`，比较文件可用 `diff --strip-trailing-cr`。缺少 tectonic/poppler 时请用户运行 `conda install -n cis-a1 -c conda-forge tectonic poppler`，agent 不自行安装。macOS 继续使用上一条本机工具约定。
 - LaTeX 编译（`subfiles`）：`main.tex` 是完整报告（导言区 + `\subfile` 各章）；每个章节文件首尾固定为 `\documentclass[../main.tex]{subfiles}`、`\begin{document}` … `\end{document}`，可借用 `main.tex` 的导言区单独编译。`main.tex`、`sections/`、`figures/` 的相对位置不可改。每次修改 LaTeX 后，agent 在 `report/` 下运行 `mkdir -p build && tectonic --keep-logs --outdir build sections/<章节>.tex`（或 `main.tex` 编整份），修掉错误和 Overfull 后，在侧边文件面板打开 `build/<章节>.pdf` 给用户看。`report/build/` 由根 `.gitignore` 忽略。用户也可用 VS Code 的 LaTeX Workshop（需 MacTeX）。
 - 临时预览（如阶段蒸馏）：写成 `sections/` 下的临时章节文件单独编译，不加入 `main.tex`、不记 log，用户看完即删。

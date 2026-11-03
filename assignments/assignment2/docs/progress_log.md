@@ -213,3 +213,85 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - Clarify true, observed and estimated quantities; distinguish coordinate unit vectors from joint axes; remove unnecessary auxiliary notation and repeated prose.
 - Validation: the mathematical chapter compiles without warnings; the full report compiles with pre-existing bibliography underfull-box and duplicate page-anchor warnings; git diff --check passes. No student-code changes or calibration-performance runs.
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/03_mathematical_approach.tex
+
+
+### TBD | 2026-11-03 03:51 | "Phase 4: integrate calibrated kinematics and independent validation" | not pushed
+- Agent: Codex (model not exposed)
+- Changes:
+  - Integrate student modules, tests, notebook and report Sections 4-7 from assignment2-gy 62df0a6, preserving the current theory and merging compatible Windows guidance.
+  - Add 35 independent/edge-case tests (81 total); reject invalid targets, unconverged inverse candidates and unobservable initialization geometry; preserve valid encoder angles.
+  - Audit English comments, correct stale template and covariance/rank claims, harmonize report notation and selected-base-turn formulas, and document conditional accuracy conclusions.
+  - Add reproducible controlled sensitivity data/plots, guarded inverse failure counts, and supplementary notebook validation while retaining the original saved end-to-end outputs.
+  - Retain consecutive-command sampling as requested. Mark Phase 4 complete; Phase 5 remains open, including the empty introduction and final report synchronization.
+  - Prepare a separate assignment2_code submission branch based on course main, excluding report, agent and reference materials and removing report-file dependencies.
+- Validation:
+  - Fresh Jupyter execution on this Mac: all 16 code cells complete in 124.116 s, including 81 passing tests (5.48 s); fixed 729-pose grid retained, simulator/provided tests unchanged.
+  - Tracker-frame evaluated cases meet targets. Base-relative precision is not met for all seeds; a separate fixed-noise run has 1254/4800 forward and 68/240 inverse poses meeting both limits.
+  - Full report compiles with no undefined references or overfull boxes; only pre-existing bibliography/anchor warnings remain. Experimental CSV aggregates and inverse failure counts were checked.
+- Files: AGENTS.md, docs/progress_log.md, src/student/, tests/test_student.py, tests/test_kinematics_validation.py, tests/kinematics_sensitivity.py, tests/data/, notebooks/assignment2_template.ipynb, report/main.tex, report/sections/01_introduction.tex, report/sections/03_mathematical_approach.tex through 07_results.tex, report/figures/kinematics_sensitivity.pdf, report/figures/kinematics_sensitivity.png
+
+
+## Imported source history: assignment2-gy
+
+The following records are preserved from the source branch at 62df0a6. Their hashes and pushed status refer to assignment2-gy; the current selective import does not add those commits to assignment2 history. Current mathematical work and its commit records above are retained.
+
+### 5428df6 | 2026-10-26 15:50 | "Phase 4: student code, unit tests and executed notebook (single-axis plan, decoupled init, gauge from handout bounds)" | pushed
+- Agent: Claude Code (Opus 5.5), branch assignment2-gy (new branch for this work, based on assignment2 at 30d8d49)
+- Changes:
+  - src/student/metrics.py: frame_error (rotation angle from log_so3, translation norm); summarize_errors (n, rms/mean/max of angle and position)
+  - src/student/registration.py: register_points (centered SVD with reflection fix; rejects < 3 pairs, unequal lengths, collinear sets); average_frames (chordal mean projected to SO(3)); refine_marker_body (readings mapped back into the body frame and averaged, stored with update_marker_body)
+  - src/student/workflow.py: measure_home_offsets (-mean of n homings); collect_calibration_data (repeats averaged per pose, invisible poses skipped and recorded; CalibrationData gains n_readings, skipped); estimate_base_frame (average of F_obs,j fwd_kins(theta_j)^-1); plan_calibration_poses with method 'single_axis' (default, handout method 1) and 'concurrent' (wrist/stage pairs swept together), knot stops at 100 mm / pi/4, repetitions per stop sized from desired_accuracy, visibility check with the worst-case base-pose margin; helpers joint_knots, readings_per_stop, estimate_plan_time
+  - src/student/kinematics.py: ImprovedKinematics with piecewise-linear knot model of delta_theta_k (planner knots, home knot fixed by homing), tilts phi_2..6, tool twist, base twist; initial_estimate (decoupled closed form from single-axis sweeps: stage directions and joint values from translations, wrist axes and angles from relative rotations, pivot calibration for tool offset and wrist center); weighted least-squares fit over merged repeated commands; the G2+G3 gauge (rotation about d_1, not removed by homing) is fixed during the fit and then chosen as the midpoint of the interval allowed by the handout bounds (choose_gauge); Jacobian rank report with parameter stds; parameters_report
+  - tests/test_student.py: TODO tests written (planner visibility/limits/knots/repetitions, synthetic fit recovery, refine_marker_body); new tests for the planner rejection, readings_per_stop, decoupled initial estimate and gauge choice; 44 passed
+  - notebooks/assignment2_template.ipynb: Step 1 scene (robot at origin, side-view tracker, 74.9 mm tetrahedron mBee), Step 6 timing, Step 7 single_axis plan (comment explains the theta = 0 sweep base), Step 8 fit and ground-truth comparison, Steps 9-10 evaluation (greedy target order), summary table, multi-seed comparison of both plans; executed with outputs (all targets met, seeds 1-5)
+  - AGENTS.md: section 7: Windows setup (conda env cis-a1, python path, Git Bash, autocrlf, missing tectonic/pdftoppm); section 6: Phase 4 checked, added TBD line for this commit
+  - docs/progress_log.md: Pending merged into this block
+- Files: AGENTS.md, docs/progress_log.md, notebooks/assignment2_template.ipynb, src/student/kinematics.py, src/student/metrics.py, src/student/registration.py, src/student/workflow.py, tests/test_student.py
+
+### 1ed6048 | 2026-10-26 16:16 | "Tests: collect_calibration_data and estimate_plan_time" | pushed
+- Agent: Claude Code (Opus 5.5), branch assignment2-gy
+- Changes:
+  - tests/test_student.py: test_collect_calibration_data_averages_readings_and_skips_invisible_poses (tracker shifted 800 mm: visible pose gives one sample averaged from 3 readings near the actual pose, invisible pose skipped after one reading with a warning, t_collect = motion time + readings, repeats < 1 rejected); test_estimate_plan_time_matches_the_simulated_clock (estimate equals the clock advance of collecting a plan); 46 passed
+  - AGENTS.md: section 6: added TBD line for this commit
+  - docs/progress_log.md: Pending merged into this block
+- Files: AGENTS.md, docs/progress_log.md, tests/test_student.py
+
+### 86379d8 | 2026-10-26 17:08 | "Report: Sections 4-7 (algorithm, program structure, validation, results)" | pushed
+- Agent: Claude Code (Opus 5.5), branch assignment2-gy
+- Changes:
+  - report/sections/04_algorithmic_approach.tex: Algorithmic Approach: scene design (incl. why no other marker body), homing, pose planning (knots, readings per stop, single-axis sweeps from theta = 0 and why, visibility margin, concurrent variant), data collection, decoupled initial estimate, weighted least-squares fit, rotation about d_1 chosen from the handout bounds (seven null directions, six removed by homing), improved FwdK/InvK, tracker-frame evaluation, execution-flow figure
+  - report/sections/05_program_structure.tex: module table, hierarchy figure, runtime-function table, tests, outputs
+  - report/sections/06_validation.tex: end-to-end metrics, supplied and own unit-test tables with purposes, 46 passed, limitations
+  - report/sections/07_results.tex: calibration data and time, estimated parameters vs truth, seed-1 accuracy, five seeds and both plans, the handout's base-frame definition (achieved accuracy, met for seed 1 only)
+  - report/sections/01_introduction.tex: section heading only, so that Sections 2-7 are numbered as the file names; body still to be written
+  - report/main.tex: preamble: fn macro (\fn) for code names that break only after _ . / ,
+  - audit against the handout, code and saved outputs: rotation R_trk,rob in the stage sweep equation, theta = 0 vs home reading (offset plus repeatability), plan time range, gauge wording, joint-offset labels (line value at 0 vs true c_k), test time
+  - Note: Section 3 (teammate) still states that homing removes all gauges and 6+10+6 parameters; Section 4 follows the code (G2+G3 remains, 59 parameters)
+  - Note: Section 7.4 (seeds 6-25) and 7.5 (base-frame metric) use separate verification runs, not saved notebook outputs
+  - AGENTS.md: section 6: added TBD line for this commit
+  - docs/progress_log.md: Pending merged into this block
+- Files: AGENTS.md, docs/progress_log.md, report/main.tex, report/sections/01_introduction.tex, report/sections/04_algorithmic_approach.tex, report/sections/05_program_structure.tex, report/sections/06_validation.tex, report/sections/07_results.tex
+
+### 339e2e6 | 2026-10-26 17:26 | "Notebook extended evaluation; report numbers from one saved run" | pushed
+- Agent: Claude Code (Opus 5.5), branch assignment2-gy
+- Changes:
+  - notebooks/assignment2_template.ipynb: calibrate helper (Steps 2, 6-8 for one seed, with fit statistics and the residual at the nominal start), run_pipeline uses it; new Extended evaluation cell: seeds 6-25 (single-axis), fit statistics over seeds 1-25, and for seeds 1-8 600 random full-range configurations (tracker frame; base frame with the bounds gauge and with c = 0) plus 30 base-frame InvK targets; whole notebook executed (about 4 min); the committed outputs are those of the run saved at 17:23
+  - report/sections/07_results.tex: every number taken from the saved notebook outputs (tables generated from them); base-frame table from the extended evaluation, with the c = 0 comparison and the base-frame InvK error
+  - report/sections/04_algorithmic_approach.tex: residual and iteration ranges over 25 seeds from the saved run; scene clearance stated as checked by the planner
+  - report/sections/05_program_structure.tex: extended evaluation in the module table and outputs; notebook run time
+  - report/sections/06_validation.tex: separate runs replaced by the extended evaluation; refinement test purpose without an unsaved number; limitations updated
+  - final check: notebook (all cells executed, no errors, no TODO, ground truth only in evaluation and reporting), all Section 7 numbers against the saved outputs, 46 tests passed, report compiles without overfull boxes or undefined references
+  - Note: Section 3 (teammate) still states that homing removes all gauges and 6+10+6 parameters
+  - AGENTS.md: section 6: added TBD line for this commit
+  - docs/progress_log.md: Pending merged into this block
+- Files: AGENTS.md, docs/progress_log.md, notebooks/assignment2_template.ipynb, report/sections/04_algorithmic_approach.tex, report/sections/05_program_structure.tex, report/sections/06_validation.tex, report/sections/07_results.tex
+
+### 4063c75 | 2026-10-26 17:34 | "Report: explain the unseeded reading noise (Sections 6.3, 7)" | pushed
+- Agent: Claude Code (Opus 5.5), branch assignment2-gy
+- Changes:
+  - report/sections/06_validation.tex: Limitations: the seed fixes the robot errors, the repeatability draws and the tracker distortion field, but the simulator draws the reading noise from NumPy's unseeded global generator, so repeated runs of one seed differ slightly; reported numbers come from one saved run; the spread over 25 seeds stays within the targets; label sec:val-limits
+  - report/sections/07_results.tex: intro sentence on the unseeded reading noise, pointing to Section 6.3
+  - code and notebook unchanged (the saved run meets the targets)
+  - AGENTS.md: section 6: added TBD line for this commit
+  - docs/progress_log.md: Pending merged into this block
+- Files: AGENTS.md, docs/progress_log.md, report/sections/06_validation.tex, report/sections/07_results.tex
