@@ -251,7 +251,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 - Files: AGENTS.md, docs/progress_log.md, tests/kinematics_sensitivity.py, tests/data/kinematics_sensitivity_runs.csv, tests/data/kinematics_sensitivity_summary.csv
 
 
-### TBD | 2026-11-03 04:15 | "Report: save signed final PDF" | not pushed
+### 6c8922b | 2026-11-03 04:15 | "Report: save signed final PDF" | pushed
 - Agent: Codex (model not exposed)
 - Changes:
   - Preserve the user's signed PDF as report/final_report.pdf by byte-for-byte copy from the ignored report/build/main.pdf. No compilation or PDF-content modification.

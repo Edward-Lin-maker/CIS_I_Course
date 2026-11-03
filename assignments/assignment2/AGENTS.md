@@ -83,7 +83,7 @@ assignment2/
 - 2b43b5b | 11-03 | Phase 4: integrate calibrated kinematics and independent validation
 - 9a283d7 | 11-03 | fix: include controlled validation datasets
 - 0148493 | 11-03 | chore: finalize code submission packaging
-- TBD | 11-03 | Report: save signed final PDF
+- 6c8922b | 11-03 | Report: save signed final PDF
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
