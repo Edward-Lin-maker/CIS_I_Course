@@ -239,7 +239,7 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 - Files: AGENTS.md, docs/progress_log.md, tests/data/kinematics_sensitivity_runs.csv, tests/data/kinematics_sensitivity_summary.csv
 
 
-### TBD | 2026-11-03 04:00 | "chore: finalize code submission packaging" | not pushed
+### 0148493 | 2026-11-03 04:00 | "chore: finalize code submission packaging" | pushed
 - Agent: Codex (model not exposed)
 - Changes:
   - Preserve the full assignment2 branch and publish a separate assignment2_code branch from course main 0723d0b (code commits 4f9addc, cb4a5ff).

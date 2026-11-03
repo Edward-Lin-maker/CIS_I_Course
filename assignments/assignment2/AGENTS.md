@@ -81,7 +81,7 @@ assignment2/
 
 ### Current phase commits（Phase 5）
 - 9a283d7 | 11-03 | Phase 4: integrate calibrated kinematics and independent validation
-- TBD | 11-03 | fix: include controlled validation datasets
+- 0148493 | 11-03 | fix: include controlled validation datasets
 - TBD | 11-03 | chore: finalize code submission packaging
 
 ### Completed phases
