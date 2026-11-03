@@ -251,6 +251,16 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
 - Files: AGENTS.md, docs/progress_log.md, tests/kinematics_sensitivity.py, tests/data/kinematics_sensitivity_runs.csv, tests/data/kinematics_sensitivity_summary.csv
 
 
+### TBD | 2026-11-03 04:15 | "Report: save signed final PDF" | not pushed
+- Agent: Codex (model not exposed)
+- Changes:
+  - Preserve the user's signed PDF as report/final_report.pdf by byte-for-byte copy from the ignored report/build/main.pdf. No compilation or PDF-content modification.
+  - Inspect the cover: both signatures are visible; the PDF has 42 pages. SHA256: 91efa144a1c7a26dcd35270055b1868bed9b86abafb8a2ccaa786b65b66b262b.
+  - Correct the accidentally substituted placeholder and historical commit hashes in AGENTS.md's log instructions/progress list.
+  - Keep LaTeX sources, student code and assignment2_code unchanged.
+- Files: AGENTS.md, docs/progress_log.md, report/final_report.pdf
+
+
 ## Imported source history: assignment2-gy
 
 The following records are preserved from the source branch at 62df0a6. Their hashes and pushed status refer to assignment2-gy; the current selective import does not add those commits to assignment2 history. Current mathematical work and its commit records above are retained.
