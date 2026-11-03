@@ -1,7 +1,7 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 \section{Mathematical Approach}\label{sec:math}
-We follow Method~1 of the handout: estimate the robot's kinematic parameters and use them to improve the forward and inverse kinematics. After stating the accuracy goal, we relate the observations to the unknown model parameters and derive the calibration from single-joint motions. We then refine the estimates by least squares, examine identifiability, and construct the improved kinematics. Notation follows the Variables and Notation section.
+We follow Method~1 of the handout: estimate the robot's kinematic parameters and use them to improve the forward and inverse kinematics. After stating the accuracy goal, we relate the observations to the unknown model parameters and derive the calibration from single-joint motions. The pipeline includes the joint pose fit and the improved forward and inverse kinematics; the following error analysis separates exact cancellations, initialization approximations and physical uncertainties. Notation follows the Variables and Notation section.
 
 \subsection{Goal}\label{sec:math-problem}
 Table~\ref{tab:goal} states what must be achieved. The forward error compares the model with the actual pose for the same encoder values; the inverse error compares a target with the pose the robot actually reaches.
@@ -108,14 +108,14 @@ The last block stacks one scalar $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.31\textwidth}>{\raggedright\arraybackslash}p{0.46\textwidth}>{\raggedright\arraybackslash}p{0.15\textwidth}@{}}
 \toprule
 Parameters & Meaning & Count \\\midrule
-$\vct{\alpha}_X$, $\vct{\epsilon}_X$ & correction of the base about its nominal value $F_X$: $F_X(\vct{x})=F_X\Frame\bigl(R(\vct{\alpha}_X),\vct{\epsilon}_X\bigr)$ & 6 \\
+$\vct{\alpha}_X$, $\vct{\epsilon}_X$ & rotation and translation corrections to a fixed base reference, selected during initialization & 6 \\
 $t_{k,1}$, $t_{k,2}$, $k=2,\dots,6$ & tilts $\vct{\phi}_k=t_{k,1}\vct{v}_{k,1}+t_{k,2}\vct{v}_{k,2}$, with unit vectors $\vct{v}_{k,1},\vct{v}_{k,2}\perp\vct{d}_k$ & 10 \\
 $\vct{\alpha}_{\mathrm{we}}$, $\vct{\epsilon}_{\mathrm{we}}$ & tool error $\Delta F_{\mathrm{we}}$ & 6 \\
 $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_k^{(l)})$ & distortion of joint $k$ at the selected encoder position $\theta_k^{(l)}$ & $\sum_{k=1}^{6}(L_k+1)$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-The base parameters $\vct{\alpha}_X$ and $\vct{\epsilon}_X$ describe a correction to the nominal base $F_X=F_{\mathrm{tracker}}^{-1}F_{\mathrm{rob}}$. For a given trial vector $\vct{x}$, the base correction, axis tilts, tool error and distortion values $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_k^{(l)})$ stored in $\vct{x}$ are shared by all predictions. For example, the first two observations are compared with
+The base parameters $\vct{\alpha}_X$ and $\vct{\epsilon}_X$ describe a correction to a fixed reference transform. For a given trial vector $\vct{x}$, the base correction, axis tilts, tool error and distortion values $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_k^{(l)})$ stored in $\vct{x}$ are shared by all predictions. For example, the first two observations are compared with
 \begin{equation*}
 \begin{aligned}
 F_{m,\mathrm{obs},1}&\approx F_X(\vct{x})\hat F_{\mathrm{ee}}(\vct{\theta}_1;\vct{x}),\\
@@ -124,678 +124,962 @@ F_{m,\mathrm{obs},2}&\approx F_X(\vct{x})\hat F_{\mathrm{ee}}(\vct{\theta}_2;\vc
 \end{equation*}
 The commanded joint values $\vct{\theta}_1$ and $\vct{\theta}_2$ differ, but the selected positions $\theta_k^{(l)}$ and the parameter vector $\vct{x}$ are the same in both predictions. The interpolation weights depend on the input joint values, so $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_{k,1})$ and $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_{k,2})$ can differ even though both are computed from the same fitted values $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_k^{(l)})$. We fit one $\vct{x}$ to all observed poses $F_{m,\mathrm{obs},j}$ in a single least-squares problem.
 
-\subsection{Calibration from single-joint motions}\label{sec:math-init}
-We first estimate wrist-axis directions and angular travel from wrist rotations (Step~A), and stage directions and linear travel from stage translations (Step~B). Homing supplies the absolute reference needed to estimate the joint distortion $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}$ from relative travel. We then estimate the base transform $F_{X,\mathrm{est}}$, base-relative axes $\vct{d}_{k,\mathrm{est}}$ and tool error $\Delta F_{\mathrm{we},\mathrm{est}}$ (Step~C), using a chosen convention for the base orientation. Figure~\ref{fig:single-joint-calibration} outlines the calculation order. The following subsections introduce the intermediate quantities and derive each step; the resulting estimates initialize $\vct{x}$ for joint refinement.
+\subsection{Calibration pipeline}\label{sec:math-init}
+Single-joint observations initialize the base, axes, tool and distortion values. One joint pose fit then refines these parameters; Section~\ref{sec:math-errors} analyses the approximations and remaining uncertainty.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-  box/.style={draw, rounded corners=2pt, align=center, font=\small,
-              inner sep=7pt, fill=gray!5},
-  flow/.style={-{Stealth[length=2mm]}, semithick}
-]
-\node[box, text width=11.8cm] (data) at (0,0)
-  {Single-joint commands and tracker observations\\
-   Encoder values returned by homing};
-\node[box, text width=5.3cm] (wrist) at (-3.2,-1.8)
-  {\textbf{Step A: wrist rotations}\\
-   Estimate wrist-axis directions\\and angular travel};
-\node[box, text width=5.3cm] (stage) at (3.2,-1.8)
-  {\textbf{Step B: stage translations}\\
-   Estimate stage directions\\and linear travel};
-\node[box, text width=11.8cm] (distortion) at (0,-3.6)
-  {Combine relative travel with the homing reference\\
-   Estimate joint distortion};
-\node[box, text width=11.8cm] (frames) at (0,-5.2)
-  {\textbf{Step C: base and tool}\\
-   Estimate base pose, axis directions and tool error};
-\node[box, text width=11.8cm] (refine) at (0,-6.8)
-  {Initialize the parameter vector $\vct{x}$\\
-   Refine $\vct{x}$ jointly using all tracker observations};
-\draw[flow] (data.south) -- (wrist.north);
-\draw[flow] (data.south) -- (stage.north);
-\draw[flow] (wrist.south) -- (distortion.north);
-\draw[flow] (stage.south) -- (distortion.north);
-\draw[flow] (distortion.south) -- (frames.north);
-\draw[flow] (frames.south) -- (refine.north);
+box/.style={draw, rounded corners=2pt, align=center, font=\small, inner sep=6pt, text width=11.5cm, fill=gray!5},
+flow/.style={-{Stealth[length=2mm]}, semithick}]
+\node[box] (home) at (0,0) {Repeated homing and single-joint observations\\Distortion reference; recorded commands and tracker poses};
+\node[box] (axes) at (0,-1.5) {Steps A and B: initial tracker-frame axes and relative travel\\Wrist rotations; stage position differences};
+\node[box] (dist) at (0,-3) {Initial reference-joint values and distortion values\\Combine homing with relative travel};
+\node[box] (base) at (0,-4.5) {Step C: initial base, internal axes and tool\\Choose base coordinates; fit wrist center and tool translation};
+\node[box] (fit) at (0,-6) {Joint weighted pose fit\\Update the free parameters together using all observations};
+\node[box] (out) at (0,-7.5) {Choose the remaining base turn using parameter bounds\\Construct ImprovedFwdKins and ImprovedInvKins};
+\draw[flow] (home)--(axes);\draw[flow] (axes)--(dist);\draw[flow] (dist)--(base);\draw[flow] (base)--(fit);\draw[flow] (fit)--(out);
 \end{tikzpicture}
-\caption{Single-joint calibration followed by joint refinement. All preceding observations and estimates remain available to subsequent steps.}\label{fig:single-joint-calibration}
+\caption{Initial estimates followed by joint parameter refinement.}\label{fig:single-joint-calibration}
 \end{figure}
 
-\subsubsection{Reference configuration}\label{sec:math-single}
-A single-joint sweep means the following data-collection sequence. Choose the joint to move, indexed by $k\in\{1,\dots,6\}$, and call $\Fun{HomeRobot}$. Immediately record the returned encoder values $\vct{\theta}_0=\vct{\theta}_{\mathrm{encoders}}$ and the tracker reference observation $F_{m,\mathrm{obs},0}$, before commanding another move. Then change only joint $k$ and collect samples $j=1,2,\dots$, each consisting of one move followed by one tracker observation, without homing between these samples. Keep the other joint commands equal to their recorded reference values. After completing data collection for joint $k$, home again before collecting data for the next joint; that new collection uses its own reference sample $j=0$ and newly returned encoder values.
-
-Within one sweep, $i\in\{1,\dots,6\}$ indexes the joint being considered; $i\ne k$ identifies a held joint. The observation index $j=0$ denotes that sweep's homing reference. The reference configuration is therefore physical home, not the zero encoder command:
+\subsubsection{Reference commands and averaged observations}\label{sec:math-single}
+\paragraph{Calibration reference.}
+Record $F_{m,\mathrm{obs},0}$ at the zero encoder command:
 \begin{equation}\label{eq:home-reference}
-\vct{\theta}^*_0=\vct{0},\qquad
-\vct{\theta}_0=\vct{\theta}_{\mathrm{encoders}}.
+\vct{\theta}_0=\begin{bmatrix}0&0&0&0&0&0\end{bmatrix}^{T},\qquad
+\theta_{i,0}^*=\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(0)+\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0}.
 \end{equation}
-\subsubsection{Relative motion of one joint}
-Frames are written as homogeneous matrices, points and directions as homogeneous vectors:
+For joint $k$, sample $j\geq1$ changes only that joint command:
 \begin{equation*}
-F=\begin{bmatrix}R&\vct{p}\\\vct{0}^T&1\end{bmatrix},\qquad
-\tilde{\vct{p}}=\begin{bmatrix}\vct{p}\\1\end{bmatrix}\ \text{(point)},\qquad
-\tilde{\vct{d}}=\begin{bmatrix}\vct{d}\\0\end{bmatrix}\ \text{(direction)},
-\end{equation*}
-so that a frame moves a point and only turns a direction. Two kinds of pose appear in the derivation:
-\begin{itemize}
-\item the \emph{actual} pose of $mBee$ in sample $j$, $F^*_{m,j}=F^*_XF^*_{\mathrm{ee}}(\vct{\theta}_j)$, which is hidden;
-\item the \emph{observation} $F_{m,\mathrm{obs},j}$, the frame that the tracker computes from the reported markers by SVD registration, Eq.~\eqref{eq:observation}; the subscript $\mathrm{obs}$ identifies this tracker observation.
-\end{itemize}
-To compare the two configurations, consider one fixed marker with local coordinate $\vct{a}$. Its actual tracker-frame positions satisfy
-\begin{equation*}
-\vct{b}^*_{m,0}=F^*_{m,0}\vct{a},\qquad
-\vct{b}^*_{m,j}=F^*_{m,j}\vct{a}.
-\end{equation*}
-Solving the reference equation for the same local coordinate and substituting into the second equation gives
-\begin{equation}\label{eq:rel-frames}
-\begin{aligned}
-\vct{a}&=(F^*_{m,0})^{-1}\vct{b}^*_{m,0},\\
-\vct{b}^*_{m,j}&=\underbrace{F^*_{m,j}(F^*_{m,0})^{-1}}_{\text{motion from reference to sample }j}\vct{b}^*_{m,0}.
-\end{aligned}
-\end{equation}
-The product $F^*_{m,j}(F^*_{m,0})^{-1}$ maps the reference marker position to its new position, both expressed in tracker coordinates.
-
-For example, when joint $k=2$ is moved, compare the following physical joint values using the same actual kinematic chain in both rows:
-\begin{equation*}
-\begin{aligned}
-\begin{bmatrix}
-\theta^*_{1,j}&\theta^*_{2,j}&\theta^*_{3,j}&\theta^*_{4,j}&\theta^*_{5,j}&\theta^*_{6,j}
-\end{bmatrix}^{T}
-&\longmapsto F^*_{m,j},\\[6pt]
-\begin{bmatrix}
-0&\theta^*_{2,j}&0&0&0&0
-\end{bmatrix}^{T}
-&\longmapsto F_{\mathrm{ideal},j}.
-\end{aligned}
-\end{equation*}
-The second row defines $F_{\mathrm{ideal},j}$: retain the active physical joint value $\theta^*_{k,j}$ and set the held physical joint values to zero. The actual axis directions, tool transform and base transform are unchanged. The difference between the two poses is
-\begin{equation}\label{eq:held-pose-error}
-\begin{aligned}
-\Delta F_{\mathrm{hold},j}&=F_{\mathrm{ideal},j}^{-1}F^*_{m,j},\\
-F^*_{m,j}&=F_{\mathrm{ideal},j}\Delta F_{\mathrm{hold},j}.
-\end{aligned}
-\end{equation}
-We derive pure single-joint motion from $F_{\mathrm{ideal},j}$ and retain $\Delta F_{\mathrm{hold},j}$ when relating that motion to the observations.
-
-Steps~A--C estimate joint-axis directions, axis locations where needed, and joint travel from the observations. We therefore need a geometric model for fitting:
-\begin{equation*}
-\underbrace{F_{m,\mathrm{obs},j}F_{m,\mathrm{obs},0}^{-1}}_{\text{observed relative motion}}
-\quad\xrightarrow{\text{fit}}\quad
-\text{joint axes and travel}.
-\end{equation*}
-The reference has all physical joint values zero. In $F_{\mathrm{ideal},j}$, only $\theta^*_{k,j}$ differs from zero, so
-\begin{equation}\label{eq:relative-comparison}
-F_{\mathrm{ideal},j}(F^*_{m,0})^{-1}
-=\begin{cases}
-\text{translation along the actual joint axis},&k=1,2,3,\\
-\text{rotation about the actual joint axis},&k=4,5,6.
-\end{cases}
-\end{equation}
-To relate this geometry to the observations, retain both error sources:
-\begin{equation*}
-F^*_{m,j}=F_{\mathrm{ideal},j}\Delta F_{\mathrm{hold},j},\qquad
-F^*_{m,j}=F_{m,\mathrm{obs},j}\Delta F_{m,j}.
-\end{equation*}
-Solving for the observation and the inverse reference observation gives
-\begin{equation*}
-\begin{aligned}
-F_{m,\mathrm{obs},j}
-&=F^*_{m,j}\Delta F_{m,j}^{-1}
-=F_{\mathrm{ideal},j}\Delta F_{\mathrm{hold},j}\Delta F_{m,j}^{-1},\\
-F_{m,\mathrm{obs},0}^{-1}
-&=\bigl(F^*_{m,0}\Delta F_{m,0}^{-1}\bigr)^{-1}
-=\Delta F_{m,0}(F^*_{m,0})^{-1}.
-\end{aligned}
-\end{equation*}
-Here $(AB)^{-1}=B^{-1}A^{-1}$. Substitution therefore yields
-\begin{equation}\label{eq:observed-relative-errors}
-\begin{aligned}
-F_{m,\mathrm{obs},j}F_{m,\mathrm{obs},0}^{-1}
-&=\bigl(F_{\mathrm{ideal},j}\Delta F_{\mathrm{hold},j}\Delta F_{m,j}^{-1}\bigr)
-\bigl(\Delta F_{m,0}(F^*_{m,0})^{-1}\bigr)\\
-&=F_{\mathrm{ideal},j}
-\underbrace{\Delta F_{\mathrm{hold},j}\Delta F_{m,j}^{-1}\Delta F_{m,0}}_{\text{held-joint and tracker errors}}
-(F^*_{m,0})^{-1}.
-\end{aligned}
-\end{equation}
-We first derive how the joint axes and travel determine $F_{\mathrm{ideal},j}(F^*_{m,0})^{-1}$, then fit that geometry to $F_{m,\mathrm{obs},j}F_{m,\mathrm{obs},0}^{-1}$. The errors in Eq.~\eqref{eq:observed-relative-errors} remain present; their effects on the estimates are assessed after the geometric relations.
-
-\subsubsection{Step A: wrist joints}
-\paragraph{Input.}
-For joint $k$, use the reference observation $F_{m,\mathrm{obs},0}$ and $N$ samples $\{F_{m,\mathrm{obs},j},\vct{\theta}_j\}_{j=1}^{N}$ from the same single-joint collection. Here $k\in\{4,5,6\}$. Write each observed pose, including the reference $j=0$, as
-\begin{equation*}
-F_{m,\mathrm{obs},j}=\Frame(R_{m,\mathrm{obs},j},\vct{p}_{m,\mathrm{obs},j}).
-\end{equation*}
-The observed relative rotation is $R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T$.
-
-\paragraph{Geometric model.}
-At physical home, $F^*_{c,0}=F^*_{w,0}=I$, so the reference pose is
-\begin{equation}\label{eq:actual-parts}
-F^*_{m,0}=F^*_X F_{\mathrm{cw}}F_{\mathrm{we}}\Delta F_{\mathrm{we}}.
-\end{equation}
-The held wrist angles are zero, so only the rotation of joint $k$ remains:
-\begin{equation*}
-F_{\mathrm{ideal},j}
-=F^*_X F_{\mathrm{cw}}
-\begin{bmatrix}R(\vct{d}^*_k,\theta^*_{k,j})&\vct{0}\\\vct{0}^T&1\end{bmatrix}
-F_{\mathrm{we}}\Delta F_{\mathrm{we}}.
-\end{equation*}
-Here $R(\vct{d}^*_k,\theta^*_{k,j})$ rotates about the unit axis $\vct{d}^*_k$ by $\theta^*_{k,j}$. Write $F_X^*=\Frame(R_X^*,\vct{p}_X^*)$ and $F_{\mathrm{cw}}=\Frame(I,\vct{p}_{\mathrm{cw}})$, with $\vct{p}_{\mathrm{cw}}=[500,0,0]^T$. Cancelling the common tool transforms gives
-\begin{equation}\label{eq:wrist-turn}
-\begin{aligned}
-F_{\mathrm{ideal},j}(F^*_{m,0})^{-1}
-&=F^*_X F_{\mathrm{cw}}
-\begin{bmatrix}R(\vct{d}^*_k,\theta^*_{k,j})&\vct{0}\\\vct{0}^T&1\end{bmatrix}
-(F^*_X F_{\mathrm{cw}})^{-1}\\
-&=\begin{bmatrix}
-R(\vct{\ell}_k,\theta^*_{k,j})&
-\bigl[I-R(\vct{\ell}_k,\theta^*_{k,j})\bigr]
-\bigl(\vct{p}_X^*+R_X^*\vct{p}_{\mathrm{cw}}\bigr)\\
-\vct{0}^T&1
-\end{bmatrix}.
-\end{aligned}
-\end{equation}
-Here $\vct{\ell}_k$ is the unit wrist-axis direction in tracker coordinates. The coordinate transformation changes the representation of the axis but preserves the physical rotation angle $\theta^*_{k,j}$.
-
-
-\paragraph{Least-squares fit.}
-A rotation leaves its own axis direction unchanged. Using the rotation block above gives
-\begin{equation*}
-\begin{aligned}
-R(\vct{\ell}_k,\theta^*_{k,j})\vct{\ell}_k&=\vct{\ell}_k,\\
-R_{\mathrm{ideal},j}(R^*_{m,0})^T\vct{\ell}_k&=\vct{\ell}_k,\\
-\bigl[R_{\mathrm{ideal},j}(R^*_{m,0})^T-I\bigr]\vct{\ell}_k&=\vct{0}.
-\end{aligned}
-\end{equation*}
-The following relations connect $R_{\mathrm{ideal},j}(R^*_{m,0})^T$ to $R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T$:
-\begin{center}
-\begin{tikzpicture}[
-  box/.style={draw, rounded corners=2pt, align=center, font=\small,
-              inner sep=6pt, text width=10.8cm, fill=gray!5},
-  flow/.style={-{Stealth[length=2mm]}, semithick}
-]
-\node[box] (ideal) at (0,0)
-  {\textbf{Ideal single-joint relative rotation (hidden)}\\
-   $R_{\mathrm{ideal},j}(R^*_{m,0})^T=R(\vct{\ell}_k,\theta^*_{k,j})$\\
-   Active physical value $\theta^*_{k,j}$ retained; held physical values set to zero.\\
-   Actual axes, base and tool retained.};
-\node[box] (actual) at (0,-2.5)
-  {\textbf{Actual relative rotation (hidden)}\\
-   $R^*_{m,j}(R^*_{m,0})^T$\\
-   Held physical joints can deviate from zero.};
-\node[box] (obs) at (0,-4.7)
-  {\textbf{Observed relative rotation (available)}\\
-   $R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T$\\
-   Computed from tracker observations at samples $0$ and $j$.};
-\draw[flow] (ideal.south) -- node[right, font=\small]
-  {Held-joint error $\Delta R_{\mathrm{hold},j}$} (actual.north);
-\draw[flow] (actual.south) -- node[right, font=\small]
-  {Tracker errors $\Delta R_{m,j}$, $\Delta R_{m,0}$} (obs.north);
-\end{tikzpicture}
-\end{center}
-Here $\Delta R_{\mathrm{hold},j}$ and $\Delta R_{m,j}$ are the rotation components of $\Delta F_{\mathrm{hold},j}$ and $\Delta F_{m,j}$. The reference physical values are $\vct{\theta}^*_0=\vct{0}$. The exact rotation relations are
-\begin{equation*}
-\begin{aligned}
-R^*_{m,j}(R^*_{m,0})^T
-&=R_{\mathrm{ideal},j}\Delta R_{\mathrm{hold},j}(R^*_{m,0})^T,\\
-R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T
-&=R_{\mathrm{ideal},j}\Delta R_{\mathrm{hold},j}
-(\Delta R_{m,j})^T\Delta R_{m,0}(R^*_{m,0})^T.
-\end{aligned}
-\end{equation*}
-Subtract and add $R_{\mathrm{ideal},j}(R^*_{m,0})^T$, then apply the result to the true unit axis $\vct{\ell}_k$:
-\begin{equation*}
-\begin{aligned}
-&\bigl[R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T-I\bigr]\vct{\ell}_k\\
-&\quad=\underbrace{\bigl[R_{\mathrm{ideal},j}(R^*_{m,0})^T-I\bigr]\vct{\ell}_k}_{=0}\\
-&\qquad+\underbrace{
-R_{\mathrm{ideal},j}
-\bigl[\Delta R_{\mathrm{hold},j}(\Delta R_{m,j})^T\Delta R_{m,0}-I\bigr]
-(R^*_{m,0})^T\vct{\ell}_k}_{\text{error term}}.
-\end{aligned}
-\end{equation*}
-This equality is exact; no small-angle approximation is used. The true axis makes the first term zero, but the error term generally remains. Setting the held physical values to zero defines $F_{\mathrm{ideal},j}$; it does not remove $\Delta R_{\mathrm{hold},j}$, $\Delta R_{m,j}$ or $\Delta R_{m,0}$ from the observations.
-
-For an initial axis estimate, fit the zero-residual relation to the observations without estimating these unknown error rotations separately. Search over unit vectors $\vct{\ell}_k$:
-\begin{equation}\label{eq:stepA}
-\vct{\ell}_{k,\mathrm{est}}
-=\underset{\vct{\ell}_k}{\arg\min}
-\sum_{j=1}^{N}\left\|
-\bigl(R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T-I\bigr)\vct{\ell}_k
-\right\|^2.
-\end{equation}
-Minimizing this observed residual does not imply $\vct{\ell}_{k,\mathrm{est}}=\vct{\ell}_k$: a different axis can fit the observation errors as well as the joint motion. The held-joint error statistics are analysed after Steps~A--C; the effect on $\vct{\ell}_{k,\mathrm{est}}$ also depends on tracker errors and the rotations used in the fit.
-
-Stack the known matrices to compute this fit:
-\begin{equation*}
-\begin{bmatrix}
-R_{m,\mathrm{obs},1}R_{m,\mathrm{obs},0}^T-I\\
-R_{m,\mathrm{obs},2}R_{m,\mathrm{obs},0}^T-I\\
-\vdots\\
-R_{m,\mathrm{obs},N}R_{m,\mathrm{obs},0}^T-I
-\end{bmatrix}.
-\end{equation*}
-The right singular vector for the smallest singular value is $\vct{\ell}_{k,\mathrm{est}}$. At least one non-identity relative rotation is needed to determine an axis direction. Choose the axis sign consistently with positive encoder changes $\theta_{k,j}-\theta_{k,0}$. Neither $F_X^*$ nor $\vct{d}_k^*$ is required for this calculation.
-
-\paragraph{Angular travel.}
-The same physical angle $\theta^*_{k,j}$ appears in both coordinate systems. The rotation matrix gives its cosine and signed sine:
-\begin{equation*}
-\begin{aligned}
-\cos\theta^*_{k,j}
-&=\tfrac12\bigl[\operatorname{tr}\bigl(R_{\mathrm{ideal},j}(R^*_{m,0})^T\bigr)-1\bigr],\\
-\sin\theta^*_{k,j}
-&=-\tfrac12\operatorname{tr}\bigl(\sk(\vct{\ell}_k)R_{\mathrm{ideal},j}(R^*_{m,0})^T\bigr).
-\end{aligned}
-\end{equation*}
-Substitute the observed rotations and fitted axis to estimate the angle:
-\begin{equation}\label{eq:wrist-angle-estimate}
-\begin{aligned}
-\theta_{k,j,\mathrm{est}}
-=\operatorname{atan2}\Bigl(
-&-\operatorname{tr}\bigl(\sk(\vct{\ell}_{k,\mathrm{est}})R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\bigr),\\
-&\operatorname{tr}\bigl(R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\bigr)-1\Bigr).
-\end{aligned}
-\end{equation}
-The factors $1/2$ cancel in $\operatorname{atan2}$. Use the encoder changes to select the $2\pi$ branch; the rotation matrix alone determines the angle only modulo $2\pi$.
-
-\paragraph{Output.}
-$\vct{\ell}_{k,\mathrm{est}}$ estimates the tracker-frame unit axis direction, and $\theta_{k,j,\mathrm{est}}$ estimates the physical angular travel $\theta^*_{k,j}$ from home. The axis estimate is used in Step~C; the angle estimates are used below to estimate joint distortion. Held-joint and tracker errors perturb both estimates.
-
-\subsubsection{Step B: stages}
-\paragraph{Input.}
-For joint $k\in\{1,2,3\}$, use the reference $F_{m,\mathrm{obs},0}$ and $N$ samples $\{F_{m,\mathrm{obs},j},\vct{\theta}_j\}_{j=1}^{N}$ from the same single-joint collection. As in Step~A, write $F_{m,\mathrm{obs},j}=\Frame(R_{m,\mathrm{obs},j},\vct{p}_{m,\mathrm{obs},j})$. Pose multiplication and inversion give
-\begin{equation*}
-F_{m,\mathrm{obs},j}F_{m,\mathrm{obs},0}^{-1}
-=\Frame\bigl(R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T,\,
-\vct{p}_{m,\mathrm{obs},j}-R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}\bigr).
-\end{equation*}
-The translation in this expression is computed entirely from the observations.
-
-\paragraph{Geometric model.}
-At physical home, $F^*_{m,0}=F^*_X F_{\mathrm{cw}}F_{\mathrm{we}}\Delta F_{\mathrm{we}}$. Setting the held physical joint values to zero gives
-\begin{equation*}
-F_{\mathrm{ideal},j}
-=F^*_X
-\begin{bmatrix}I&\theta^*_{k,j}\vct{d}^*_k\\\vct{0}^T&1\end{bmatrix}
-F_{\mathrm{cw}}F_{\mathrm{we}}\Delta F_{\mathrm{we}}.
-\end{equation*}
-Cancel the common tool transforms:
-\begin{equation}\label{eq:stage-line}
-\begin{aligned}
-F_{\mathrm{ideal},j}(F^*_{m,0})^{-1}
-&=F^*_X
-\begin{bmatrix}I&\theta^*_{k,j}\vct{d}^*_k\\\vct{0}^T&1\end{bmatrix}
-(F^*_X)^{-1}\\
-&=\begin{bmatrix}I&\theta^*_{k,j}\vct{\ell}_k\\\vct{0}^T&1\end{bmatrix}.
-\end{aligned}
-\end{equation}
-Here $\vct{\ell}_k$ is the unit stage direction in tracker coordinates. Changing coordinates preserves the signed distance $\theta^*_{k,j}$ from physical home. Equating translations gives
-\begin{equation*}
-\vct{p}_{\mathrm{ideal},j}
--R_{\mathrm{ideal},j}(R^*_{m,0})^T\vct{p}^*_{m,0}
-=\theta^*_{k,j}\vct{\ell}_k.
+\theta_{i,j}=\theta_{i,0}=0,\qquad i\in\{1,\ldots,6\},\ i\ne k.
 \end{equation*}
 
-\paragraph{Least-squares residual.}
-The observed relative translation is
+\paragraph{Repeated arrivals at the same command.}
+Repeat each commanded configuration to reduce the random effects of both joint repeatability and tracker measurement. Between two arrivals, visit another configuration and include the full travel time:
+\begin{equation*}
+\vct{\theta}_j\ \longrightarrow\ \vct{\theta}_{j'}\ \longrightarrow\ \vct{\theta}_j,
+\qquad \vct{\theta}_{j'}\ne\vct{\theta}_j.
+\end{equation*}
+Take one tracker observation at each arrival $q=1,\ldots,n_j$. The command and systematic joint distortion are unchanged, but the joint random error is sampled again:
+\begin{equation*}
+\theta_{i,j}^{*,(q)}=\theta_{i,j}
++\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\theta_{i,j})
++\Delta\theta^{\mathrm{rob},(q)}_{i,\mathrm{rnd},j}.
+\end{equation*}
+The model treats the move errors as independent; fixed systematic errors are not removed by repetition.
+
+\paragraph{Averaging observations at the same command.}
+Average the $n_j$ observed positions:
 \begin{equation*}
 \vct{p}_{m,\mathrm{obs},j}
--R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}.
+=\frac1{n_j}\sum_{q=1}^{n_j}\vct{p}_{m,\mathrm{obs},j}^{(q)}.
 \end{equation*}
-To estimate the direction without knowing the distances $\theta^*_{k,j}$, separate the parallel and perpendicular components of the translation. For any vector $\vct{v}$ and unit direction $\vct{\ell}_k$,
+The two SVD calculations have different inputs:
 \begin{equation*}
-\underbrace{\vct{\ell}_k(\vct{\ell}_k^T\vct{v})}_{\text{parallel component}},\qquad
-\underbrace{\vct{v}-\vct{\ell}_k(\vct{\ell}_k^T\vct{v})}_{\text{perpendicular component}}
-=(I-\vct{\ell}_k\vct{\ell}_k^T)\vct{v}.
+\underbrace{
+\{\vct{b}_{a,\mathrm{obs},j}^{(q)}\}_{a=1}^{N}
+\xrightarrow{\mathrm{SVD}}R_{m,\mathrm{obs},j}^{(q)}
+}_{\text{First SVD: marker registration}}
+\quad\longrightarrow\quad
+\underbrace{
+\{R_{m,\mathrm{obs},j}^{(q)}\}_{q=1}^{n_j}
+\xrightarrow{\mathrm{SVD}}R_{m,\mathrm{obs},j}
+}_{\text{Second SVD: rotation averaging}}.
 \end{equation*}
-The ideal relative translation equals $\theta^*_{k,j}\vct{\ell}_k$, so its perpendicular component is zero regardless of the unknown distance:
+The first estimates each arrival's pose from marker points. The second combines the resulting rotations into one rotation matrix. Use the orthonormal coordinate unit vectors
 \begin{equation*}
-\begin{aligned}
-&(I-\vct{\ell}_k\vct{\ell}_k^T)
-\bigl[\vct{p}_{\mathrm{ideal},j}
--R_{\mathrm{ideal},j}(R^*_{m,0})^T\vct{p}^*_{m,0}\bigr]\\
-&\quad=(I-\vct{\ell}_k\vct{\ell}_k^T)\theta^*_{k,j}\vct{\ell}_k\\
-&\quad=\theta^*_{k,j}\bigl[\vct{\ell}_k
--\vct{\ell}_k\underbrace{(\vct{\ell}_k^T\vct{\ell}_k)}_{=1}\bigr]\\
-&\quad=\vct{0}.
-\end{aligned}
+\vct{e}_x=\begin{bmatrix}1\\0\\0\end{bmatrix},\qquad
+\vct{e}_y=\begin{bmatrix}0\\1\\0\end{bmatrix},\qquad
+\vct{e}_z=\begin{bmatrix}0\\0\\1\end{bmatrix}.
 \end{equation*}
-Thus the direction can be fitted before the distances are estimated, by minimizing the observed components perpendicular to the candidate direction.
-The residual used in the fit is the corresponding perpendicular component of the observed translation:
+For this average, fit the three observed coordinate-axis directions over rotation matrices $R$:
 \begin{equation*}
-(I-\vct{\ell}_k\vct{\ell}_k^T)
-\bigl[\vct{p}_{m,\mathrm{obs},j}
--R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}\bigr].
+R_{m,\mathrm{obs},j}=\underset{R}{\arg\min}
+\sum_{q=1}^{n_j}
+\sum_{\vct{e}\in\{\vct{e}_x,\vct{e}_y,\vct{e}_z\}}
+\left\|R\vct{e}-R_{m,\mathrm{obs},j}^{(q)}\vct{e}\right\|^2.
 \end{equation*}
+Retain the number of arrivals as the weight of the averaged pose:
+\begin{equation*}
+w_j=n_j.
+\end{equation*}
+Under the independent-move model, averaging reduces both joint and tracker random effects. The remaining uncertainty is analysed in Section~\ref{sec:math-averaging-errors}.
 
-\paragraph{Relation to the errors.}
-Add and subtract the ideal relative translation to express this residual at the true direction:
-\begin{equation*}
-\begin{aligned}
-&(I-\vct{\ell}_k\vct{\ell}_k^T)
-\bigl[\vct{p}_{m,\mathrm{obs},j}
--R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}\bigr]\\
-&\quad=\underbrace{(I-\vct{\ell}_k\vct{\ell}_k^T)
-\bigl[\vct{p}_{\mathrm{ideal},j}
--R_{\mathrm{ideal},j}(R^*_{m,0})^T\vct{p}^*_{m,0}\bigr]}_{=0}\\
-&\qquad+(I-\vct{\ell}_k\vct{\ell}_k^T)
-\Bigl[\vct{p}_{m,\mathrm{obs},j}
--R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}\\
-&\hspace{48mm}
--\vct{p}_{\mathrm{ideal},j}
-+R_{\mathrm{ideal},j}(R^*_{m,0})^T\vct{p}^*_{m,0}\Bigr].
-\end{aligned}
-\end{equation*}
-The difference in the last brackets is the translation difference between the two relative poses. Its dependence on the existing error frames follows exactly from
-\begin{equation*}
-\begin{aligned}
-&F_{m,\mathrm{obs},j}F_{m,\mathrm{obs},0}^{-1}
--F_{\mathrm{ideal},j}(F^*_{m,0})^{-1}\\
-&\quad=F_{\mathrm{ideal},j}
-\bigl[\Delta F_{\mathrm{hold},j}\Delta F_{m,j}^{-1}\Delta F_{m,0}-I\bigr]
-(F^*_{m,0})^{-1}.
-\end{aligned}
-\end{equation*}
-Thus the ideal perpendicular component is zero, while the observed perpendicular component retains the effects of $\Delta F_{\mathrm{hold},j}$, $\Delta F_{m,j}$ and $\Delta F_{m,0}$.
+\subsubsection{Step A: initial wrist-axis directions and angular travel}\label{sec:math-stepA}
+\paragraph{Input and physical relation.}
+For $k\in\{4,5,6\}$, use the reference rotation $R_{m,\mathrm{obs},0}$, the rotations $R_{m,\mathrm{obs},j}$ and encoder changes $\theta_{k,j}-\theta_{k,0}$. If all held physical wrist angles remain fixed, the true rotations satisfy
+\begin{equation}\label{eq:wrist-turn}
+R_{m,j}^*(R_{m,0}^*)^T
+=R\!\left(\vct{\ell}_k^*,\theta_{k,j}^*-\theta_{k,0}^*\right).
+\end{equation}
+Here $\vct{\ell}_k^*$ is the true unit axis in tracker coordinates at the reference configuration.
 
-\paragraph{Least-squares fit.}
-For an initial direction estimate, minimize the sum of squared observed perpendicular components over unit vectors $\vct{\ell}_k$:
+\paragraph{Rotation vectors from observations.}
+Convert the observed relative rotation to axis-angle form. Its angle is computed from the trace:
+\begin{equation*}
+\beta_j=\arccos\!\left(
+\frac{\operatorname{tr}(R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T)-1}{2}\right),
+\qquad 0\leq\beta_j\leq\pi.
+\end{equation*}
+The range follows from $\arccos$. The implementation clips its argument to $[-1,1]$ to avoid roundoff errors. For $0<\beta_j<\pi$, obtain the tracker-frame rotation vector, axis multiplied by angle, from
+\begin{equation*}
+\sk(\vct{v}_j)=\frac{\beta_j}{2\sin\beta_j}
+\left(R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T
+-R_{m,\mathrm{obs},0}R_{m,\mathrm{obs},j}^T\right),
+\qquad\norm{\vct{v}_j}=\beta_j.
+\end{equation*}
+For $\beta_j<10^{-12}$, the implementation uses the small-angle form
+\begin{equation*}
+\sk(\vct{v}_j)\approx\tfrac12
+\left(R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T
+-R_{m,\mathrm{obs},0}R_{m,\mathrm{obs},j}^T\right).
+\end{equation*}
+The implementation's reference-frame relative rotation gives the same rotation after a coordinate change:
+\begin{equation*}
+R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T
+=R_{m,\mathrm{obs},0}\bigl(R_{m,\mathrm{obs},0}^TR_{m,\mathrm{obs},j}\bigr)R_{m,\mathrm{obs},0}^T.
+\end{equation*}
+With the same axis-angle choice, multiplying its rotation vector by $R_{m,\mathrm{obs},0}$ gives $\vct{v}_j$. For direction initialization, approximate physical angular travel by encoder change:
+\begin{equation*}
+\vct{v}_j\approx(\theta_{k,j}-\theta_{k,0})\vct{\ell}_k.
+\end{equation*}
+\paragraph{Weighted direction fit.}
+Using the direction-fitting samples and visit-count weight $w_j$, search over unit directions $\vct{\ell}_k$. For each residual $\vct{e}_j$, weighting its square or scaling the residual are equivalent:
+\begin{equation*}
+w_j\norm{\vct{e}_j}^2=\norm{\sqrt{w_j}\vct{e}_j}^2,\qquad
+\norm{R_{m,\mathrm{obs},0}\vct{e}_j}^2=\norm{\vct{e}_j}^2.
+\end{equation*}
+The coordinate change preserves the direction-fit objective. Thus
+\begin{equation}\label{eq:stepA}
+\vct{\ell}_{k,\mathrm{est}}=\underset{\vct{\ell}_k}{\arg\min}
+\sum_jw_j
+\norm{\vct{v}_j-(\theta_{k,j}-\theta_{k,0})\vct{\ell}_k}^{2}.
+\end{equation}
+Expanding the objective with $\norm{\vct{\ell}_k}=1$ gives
+\begin{equation*}
+\begin{aligned}
+&\sum_jw_j\norm{\vct{v}_j-(\theta_{k,j}-\theta_{k,0})\vct{\ell}_k}^{2}\\
+&\quad=\underbrace{\sum_jw_j
+\bigl[\norm{\vct{v}_j}^{2}+(\theta_{k,j}-\theta_{k,0})^2\bigr]}_{\text{independent of the candidate direction}}\\
+&\qquad-2\vct{\ell}_k^T\sum_jw_j(\theta_{k,j}-\theta_{k,0})\vct{v}_j.
+\end{aligned}
+\end{equation*}
+Aligning the unit direction with the weighted sum gives
+\begin{equation*}
+\vct{\ell}_{k,\mathrm{est}}=
+\frac{\sum_jw_j(\theta_{k,j}-\theta_{k,0})\vct{v}_j}
+{\norm{\sum_jw_j(\theta_{k,j}-\theta_{k,0})\vct{v}_j}}.
+\end{equation*}
+The denominator must be nonzero. Encoder-change signs align positive and negative rotations to the same axis direction.
+
+\paragraph{Signed travel and angle branches.}
+For each sample of this joint, compute the signed angle in $[-\pi,\pi]$
+\begin{equation*}
+\beta_{k,j}=\operatorname{sign}(\vct{v}_j^T\vct{\ell}_{k,\mathrm{est}})\norm{\vct{v}_j}.
+\end{equation*}
+Choose the $2\pi$ branch nearest the encoder change:
+\begin{equation}\label{eq:wrist-angle-estimate}
+\Delta\theta_{k,j,\mathrm{est}}=
+\beta_{k,j}+2\pi\operatorname{round}\!\left(
+\frac{\theta_{k,j}-\theta_{k,0}-\beta_{k,j}}{2\pi}\right).
+\end{equation}
+The outputs are the initial tracker-frame axis $\vct{\ell}_{k,\mathrm{est}}$ and relative physical travel estimate $\Delta\theta_{k,j,\mathrm{est}}\approx\theta^*_{k,j}-\theta^*_{k,0}$. Absolute physical angles are recovered after estimating the reference joint values.
+
+\subsubsection{Step B: initial stage directions and linear travel}\label{sec:math-stepB}
+\paragraph{Input and physical relation.}
+For $k\in\{1,2,3\}$, use $\vct{p}_{m,\mathrm{obs},0}$, $\vct{p}_{m,\mathrm{obs},j}$ and the encoder changes. With all held physical joint values fixed, the wrist and tool positions relative to the translating carriage are unchanged. The true position difference is therefore
+\begin{equation}\label{eq:stage-line}
+\vct{p}_{m,j}^*-\vct{p}_{m,0}^*
+=\underbrace{R_X^*\vct{d}_k^*}_{\vct{\ell}_k^*}
+(\theta^*_{k,j}-\theta^*_{k,0}).
+\end{equation}
+Fit the observed position differences directly.
+
+\paragraph{Weighted direction fit.}
+For initialization, approximate physical travel by encoder change and fit a candidate unit direction:
 \begin{equation}\label{eq:stepB}
 \begin{aligned}
 \vct{\ell}_{k,\mathrm{est}}
-=\underset{\vct{\ell}_k}{\arg\min}\sum_{j=1}^{N}
-\Bigl\|&(I-\vct{\ell}_k\vct{\ell}_k^T)\\
-&\cdot\bigl(\vct{p}_{m,\mathrm{obs},j}
--R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}\bigr)\Bigr\|^2.
+=\underset{\vct{\ell}_k}{\arg\min}\sum_jw_j
+\bigl\|\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,\mathrm{obs},0}
+-(\theta_{k,j}-\theta_{k,0})\vct{\ell}_k\bigr\|^2.
 \end{aligned}
 \end{equation}
-Form the matrix with columns $\vct{p}_{m,\mathrm{obs},j}-R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}$. Its left singular vector corresponding to the largest singular value gives $\vct{\ell}_{k,\mathrm{est}}$. Choose its sign consistently with positive encoder changes $\theta_{k,j}-\theta_{k,0}$.
+The same expansion as in Step~A leaves only a term linear in the candidate unit direction, giving
+\begin{equation*}
+\vct{\ell}_{k,\mathrm{est}}=
+\frac{\sum_jw_j(\theta_{k,j}-\theta_{k,0})(\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,\mathrm{obs},0})}
+{\norm{\sum_jw_j(\theta_{k,j}-\theta_{k,0})(\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,\mathrm{obs},0})}}.
+\end{equation*}
+Again, nonzero net direction information is needed. Project onto this fitted unit direction to estimate signed travel:
+\begin{equation*}
+\Delta\theta_{k,j,\mathrm{est}}=
+\vct{\ell}_{k,\mathrm{est}}^T(\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,\mathrm{obs},0}).
+\end{equation*}
+The projection estimates physical travel independently of the encoder-travel approximation used for direction initialization.
 
-\paragraph{Linear travel.}
-For the ideal translation, projection onto the unit direction gives
+\subsubsection{Initial reference-joint values and distortion values}\label{sec:math-travel}
+Steps~A and~B estimate relative travel. Absolute physical joint values additionally need a reference, supplied by repeated homing.
+
+\paragraph{Homing reference.}
+At each homing $h$, the physical value of joint $i$ is zero:
+\begin{equation*}
+0=\theta_{\mathrm{encoders},i}^{(h)}
++\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\theta_{\mathrm{encoders},i}^{(h)})
++\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},h},\qquad h=1,\ldots,H.
+\end{equation*}
+Define the mean returned encoder value, then average the exact home equations:
 \begin{equation*}
 \begin{aligned}
-\vct{\ell}_k^T
-\bigl[\vct{p}_{\mathrm{ideal},j}
--R_{\mathrm{ideal},j}(R^*_{m,0})^T\vct{p}^*_{m,0}\bigr]
-&=\vct{\ell}_k^T\theta^*_{k,j}\vct{\ell}_k\\
-&=\theta^*_{k,j}.
+\bar\theta_{\mathrm{encoders},i}
+&=\frac1H\sum_{h=1}^{H}\theta_{\mathrm{encoders},i}^{(h)},\\
+-\bar\theta_{\mathrm{encoders},i}
+&=\frac1H\sum_{h=1}^{H}\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\theta_{\mathrm{encoders},i}^{(h)})
++\frac1H\sum_{h=1}^{H}\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},h}.
 \end{aligned}
 \end{equation*}
-Use the fitted direction and observed translation to estimate the same physical displacement:
+For independent zero-mean homing errors,
 \begin{equation*}
-\theta_{k,j,\mathrm{est}}=\vct{\ell}_{k,\mathrm{est}}^T
-\bigl(\vct{p}_{m,\mathrm{obs},j}-R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}\bigr).
+\mathbb E\!\left[\frac1H\sum_h\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},h}\right]=0,\qquad
+\operatorname{Std}\!\left(\frac1H\sum_h\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},h}\right)
+=\frac{\sigma_{i,\mathrm{rnd}}}{\sqrt H}.
 \end{equation*}
-Subtract the true displacement and add and subtract the ideal relative translation to separate direction and observation errors:
+Finite averaging reduces this random term; it does not set it exactly to zero.
+
+The average of the true distortion values is not generally the distortion at the average encoder value. The derivative bound gives
 \begin{equation*}
 \begin{aligned}
-\theta_{k,j,\mathrm{est}}-\theta^*_{k,j}
-&=\theta^*_{k,j}(\vct{\ell}_{k,\mathrm{est}}^T\vct{\ell}_k-1)\\
-&\quad+\vct{\ell}_{k,\mathrm{est}}^T
-\Bigl[\vct{p}_{m,\mathrm{obs},j}
--R_{m,\mathrm{obs},j}R_{m,\mathrm{obs},0}^T\vct{p}_{m,\mathrm{obs},0}\\
-&\hspace{35mm}-\vct{p}_{\mathrm{ideal},j}
-+R_{\mathrm{ideal},j}(R^*_{m,0})^T\vct{p}^*_{m,0}\Bigr].
+&\left|\frac1H\sum_{h=1}^{H}\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\theta_{\mathrm{encoders},i}^{(h)})
+-\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\bar\theta_{\mathrm{encoders},i})\right|\\
+&\quad\leq\frac1H\sum_{h=1}^{H}
+\left|\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\theta_{\mathrm{encoders},i}^{(h)})
+-\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\bar\theta_{\mathrm{encoders},i})\right|\\
+&\quad\leq\frac{\omega^{\mathrm{rob}}_{i,\mathrm{sys}}}{H}
+\sum_{h=1}^{H}\left|\theta_{\mathrm{encoders},i}^{(h)}-\bar\theta_{\mathrm{encoders},i}\right|.
 \end{aligned}
 \end{equation*}
-
-\paragraph{Output.}
-$\vct{\ell}_{k,\mathrm{est}}$ estimates the tracker-frame unit stage direction, and $\theta_{k,j,\mathrm{est}}$ estimates the physical linear travel $\theta^*_{k,j}$ from home. Step~C uses the direction estimates; the next subsection uses the physical-joint estimates to determine joint distortion.
-
-\subsubsection{From travel to distortion}\label{sec:math-travel}
-Steps~A and~B give $\theta_{k,j,\mathrm{est}}$ as estimates of the physical joint displacement $\theta^*_{k,j}$ from home, where $\theta^*_{k,0}=0$; the units are radians for wrist joints and millimetres for stages. By the joint model,
+When this variation and the random mean are small, the true distortion satisfies
 \begin{equation*}
-\theta^*_{k,j}=\theta_{k,j}+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},j}+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{k,j}),
+\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\bar\theta_{\mathrm{encoders},i})
+\approx-\bar\theta_{\mathrm{encoders},i}.
 \end{equation*}
-so eliminating $\theta^*_{k,j}$ gives the distortion at the commanded value:
-\begin{equation}\label{eq:stepA-y}
-y_{k,j}\equiv\theta^*_{k,j}-\theta_{k,j}=\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{k,j})+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},j},
-\end{equation}
-up to the held-joint and tracker errors. Each sample gives one measurement $y_{k,j}$ of the distortion, disturbed by the random joint error of its move and by the observation errors. The reference value $\theta^*_{k,0}=0$ comes from homing, not from a tracker measurement. This absolute reference is what makes travel usable as a physical joint value.
-
-\subsubsection{Absolute reference from homing}
-$\Fun{HomeRobot}$ stops at $\theta^*_k=0$ and returns $\theta_{\mathrm{encoders},k}=-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{\mathrm{encoders},k})$. Each homing draws a new $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}$, so the returned values scatter by about $\sigma_{k,\mathrm{rnd}}$, over which $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}$ changes by at most $\omega^{\mathrm{rob}}_{k,\mathrm{sys}}\sigma_{k,\mathrm{rnd}}$. Averaging several homings gives an approximate absolute distortion reference without the tracker:
+This motivates defining the computable estimate
 \begin{equation}\label{eq:home-distortion}
-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}\bigl(\bar\theta_{\mathrm{encoders},k}\bigr)\approx-\bar\theta_{\mathrm{encoders},k}.
+\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys},\mathrm{est}}
+(\bar\theta_{\mathrm{encoders},i}):=-\bar\theta_{\mathrm{encoders},i}.
 \end{equation}
-The approximation retains uncertainty from the finite mean of $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}$ and variation of $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}$ across the returned encoder values. The homing relation gives an absolute reference for $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}$. Together with the measurements $y_{k,j}$, this reference constrains the distortion values $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_k^{(l)})$ at the selected positions; incorporating the homing relation into the fit is part of the algorithm. The reference physical joint values are already fixed by $\vct{\theta}^*_0=\vct{0}$.
 
-\subsubsection{Step C: base and tool}
-The tracker-frame axis estimates must now be related to the robot-base axes. In the ideal geometry,
+\paragraph{Reference-joint initialization.}
+Initially extend the estimated home distortion as a constant:
 \begin{equation*}
-\tilde{\vct{\ell}}_k=
-\begin{cases}
-F_X^*\tilde{\vct{d}}_k^*,&k=1,2,3,\\
-F_X^*F_{\mathrm{cw}}\tilde{\vct{d}}_k^*,&k=4,5,6.
-\end{cases}
+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_k)
+:=\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\bar\theta_{\mathrm{encoders},k})
+=-\bar\theta_{\mathrm{encoders},k}.
 \end{equation*}
-Since $F_{\mathrm{cw}}$ is a pure translation and a homogeneous direction has last entry zero, both cases reduce to $\tilde{\vct{\ell}}_k=F_X^*\tilde{\vct{d}}_k^*$. These relations are needed here to connect the fitted axes to the base transform and axis tilts.
-To determine the base position, we now need the wrist-center position $\vct{o}_w$ in tracker coordinates. At physical home,
+Substitute this initial model into the reference-joint calculation:
 \begin{equation*}
-\tilde{\vct{o}}_w=F^*_X F_{\mathrm{cw}}\begin{bmatrix}\vct{0}\\1\end{bmatrix}.
+\theta_{k,0,\mathrm{est}}
+=\theta_{k,0}+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_{k,0})
+=\theta_{k,0}-\bar\theta_{\mathrm{encoders},k}.
 \end{equation*}
-The ideal wrist motion leaves $\vct{o}_w$ fixed:
+The true distortion is not assumed constant. For each observed joint position, compute
+\begin{equation}\label{eq:stepA-y}
+\begin{aligned}
+\theta_{k,j,\mathrm{est}}&=\theta_{k,0,\mathrm{est}}+\Delta\theta_{k,j,\mathrm{est}},\\
+y_{k,j}&=\theta_{k,j,\mathrm{est}}-\theta_{k,j}.
+\end{aligned}
+\end{equation}
+These $y_{k,j}$ initialize the distortion values at the selected encoder positions by linear interpolation. Include the reference command and its initial distortion in this interpolation.
+
+Replace the selected encoder position nearest $\bar\theta_{\mathrm{encoders},k}$ by that mean home reading, and fix the distortion there:
 \begin{equation*}
-F_{\mathrm{ideal},j}(F^*_{m,0})^{-1}\tilde{\vct{o}}_w=\tilde{\vct{o}}_w.
+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\bar\theta_{\mathrm{encoders},k})=-\bar\theta_{\mathrm{encoders},k}.
 \end{equation*}
-The observed relative motion $F_{m,\mathrm{obs},j}F_{m,\mathrm{obs},0}^{-1}$ includes held-joint and tracker errors. Estimate $\vct{o}_w$ by linear least squares over all wrist samples:
+The other selected distortion values remain free. Default spacings are $100$\,mm and $\pi/4$\,rad; the model interpolates linearly inside the selected range and extrapolates linearly outside it.
+
+\subsubsection{Step C: initial base orientation and internal axis directions}\label{sec:math-base-init}
+\paragraph{Input.}
+Use the six tracker-frame axis estimates and the reference-joint estimates. Here $\vct{e}_x,\vct{e}_y,\vct{e}_z$ denote the orthonormal robot-base coordinate directions; the physical joint axes $\vct{d}_k^*$ may be tilted relative to them. For stages the physical relation is $\vct{\ell}_k^*=R_X^*\vct{d}_k^*$. The known $\vct{d}_1^*=\vct{e}_x$ fixes the base x direction. Choosing a base y direction along the perpendicular component of $\vct{\ell}_{2,\mathrm{est}}$ gives
+\begin{equation*}
+\begin{aligned}
+R_{X,\mathrm{est}}\vct{e}_x&=\vct{\ell}_{1,\mathrm{est}},\\
+R_{X,\mathrm{est}}\vct{e}_y&=
+\frac{(I-\vct{\ell}_{1,\mathrm{est}}\vct{\ell}_{1,\mathrm{est}}^T)\vct{\ell}_{2,\mathrm{est}}}
+{\norm{(I-\vct{\ell}_{1,\mathrm{est}}\vct{\ell}_{1,\mathrm{est}}^T)\vct{\ell}_{2,\mathrm{est}}}},\\
+R_{X,\mathrm{est}}\vct{e}_z&=(R_{X,\mathrm{est}}\vct{e}_x)\times(R_{X,\mathrm{est}}\vct{e}_y).
+\end{aligned}
+\end{equation*}
+The construction imposes a coordinate choice:
+\begin{equation*}
+\vct{d}_{2,\mathrm{est}}^T\vct{e}_z=0,\qquad
+\vct{\phi}_2^T\vct{e}_x=0\quad\text{during the fit}.
+\end{equation*}
+It does not imply $(\vct{d}_2^*)^T\vct{e}_z=0$. The unmeasured base turn is selected from parameter bounds after fitting.
+
+\paragraph{Why wrist reference angles must be removed.}
+The internal wrist axes are defined before the preceding wrist rotations. For example, at the reference,
+\begin{equation*}
+\vct{\ell}_4^*=R_X^*\vct{d}_4^*,\qquad
+\vct{\ell}_5^*=R_X^*R(\vct{d}_4^*,\theta^*_{4,0})\vct{d}_5^*,
+\end{equation*}
+\begin{equation*}
+\vct{\ell}_6^*=R_X^*R(\vct{d}_4^*,\theta^*_{4,0})R(\vct{d}_5^*,\theta^*_{5,0})\vct{d}_6^*.
+\end{equation*}
+Thus remove preceding reference rotations in the order $4,5,6$:
+\begin{equation*}
+\begin{aligned}
+\vct{d}_{k,\mathrm{est}}&=R_{X,\mathrm{est}}^T\vct{\ell}_{k,\mathrm{est}},&&k=1,2,3,4,\\
+\vct{d}_{5,\mathrm{est}}&=R(\vct{d}_{4,\mathrm{est}},\theta_{4,0,\mathrm{est}})^TR_{X,\mathrm{est}}^T\vct{\ell}_{5,\mathrm{est}},\\
+\vct{d}_{6,\mathrm{est}}&=R(\vct{d}_{5,\mathrm{est}},\theta_{5,0,\mathrm{est}})^T
+R(\vct{d}_{4,\mathrm{est}},\theta_{4,0,\mathrm{est}})^TR_{X,\mathrm{est}}^T\vct{\ell}_{6,\mathrm{est}}.
+\end{aligned}
+\end{equation*}
+The estimated directions must be normalized. The code converts them to the shortest tilt vectors mapping nominal axes to estimated axes. For $k=2,\dots,6$,
+\begin{equation*}
+\vct{\phi}_{k,\mathrm{est}}=
+\frac{\vct{d}_k\times\vct{d}_{k,\mathrm{est}}}{\norm{\vct{d}_k\times\vct{d}_{k,\mathrm{est}}}}
+\operatorname{atan2}\!\left(\norm{\vct{d}_k\times\vct{d}_{k,\mathrm{est}}},\vct{d}_k^T\vct{d}_{k,\mathrm{est}}\right).
+\end{equation*}
+Use $\vct{\phi}_{k,\mathrm{est}}=\vct{0}$ when $\norm{\vct{d}_k\times\vct{d}_{k,\mathrm{est}}}<10^{-15}$. This implementation threshold assumes nearby, not antiparallel, axes.
+
+\subsubsection{Step C: initial tool transform, wrist center and base position}\label{sec:math-tool-init}
+\paragraph{Tool rotation from the reference observation.}
+Construct the reference wrist rotation from the axes just obtained:
+\begin{equation*}
+R_{w,0,\mathrm{est}}=
+R(\vct{d}_{4,\mathrm{est}},\theta_{4,0,\mathrm{est}})
+R(\vct{d}_{5,\mathrm{est}},\theta_{5,0,\mathrm{est}})
+R(\vct{d}_{6,\mathrm{est}},\theta_{6,0,\mathrm{est}}).
+\end{equation*}
+Since $F_{\mathrm{cw}}$ and nominal $F_{\mathrm{we}}$ have identity rotations, the reference relation and its estimated counterpart are
+\begin{equation*}
+R_{m,0}^*=R_X^*R_{w,0}^*R_{\mathrm{we}}^*,\qquad
+R_{\mathrm{we},\mathrm{est}}=R_{w,0,\mathrm{est}}^TR_{X,\mathrm{est}}^TR_{m,\mathrm{obs},0}.
+\end{equation*}
+
+\paragraph{Joint linear fit for wrist center and tool translation.}
+Use all wrist observations and include the reference once. Let $\vct{o}_w$ be the wrist center in tracker coordinates when the physical stages retain their reference values. Let $\vct{s}$ be the vector from the wrist center to the end-effector origin, expressed in the end-effector frame. It is constant for a rigid tool. The actual geometry gives
+\begin{equation*}
+\vct{p}_{m,j}^*=\vct{o}_w+R_{m,j}^*\vct{s},\qquad
+\vct{s}=(R_{\mathrm{we}}^*)^T\vct{p}_{\mathrm{we}}^*.
+\end{equation*}
+Substitute observed pose blocks and stack the weighted residuals:
 \begin{equation}\label{eq:pivot}
+\begin{bmatrix}\vct{s}_{\mathrm{est}}\\\vct{o}_{w,\mathrm{est}}\end{bmatrix}
+=\underset{\vct{s},\vct{o}}{\arg\min}
+\left\|
+\begin{bmatrix}\vdots\\\sqrt{w_j}[R_{m,\mathrm{obs},j}\ \ I]\\\vdots\end{bmatrix}
+\begin{bmatrix}\vct{s}\\\vct{o}\end{bmatrix}
+-\begin{bmatrix}\vdots\\\sqrt{w_j}\vct{p}_{m,\mathrm{obs},j}\\\vdots\end{bmatrix}
+\right\|^2.
+\end{equation}
+Stack joints $4,5,6$ and the reference once. Nonzero rotations about at least two nonparallel axes are needed for a unique center.
+
+Convert the fitted tool vector to the wrist frame and subtract nominal translation:
+\begin{equation*}
+\vct{p}_{\mathrm{we},\mathrm{est}}=R_{\mathrm{we},\mathrm{est}}\vct{s}_{\mathrm{est}},\qquad
+\vct{\epsilon}_{\mathrm{we},\mathrm{est}}=\vct{p}_{\mathrm{we},\mathrm{est}}-\vct{p}_{\mathrm{we}},\qquad
+R(\vct{\alpha}_{\mathrm{we},\mathrm{est}})=R_{\mathrm{we},\mathrm{est}}.
+\end{equation*}
+At the reference the carriage translation is generally nonzero. Therefore
+\begin{equation*}
 \begin{aligned}
-\vct{o}_{w,\mathrm{est}}=\arg\min_{\vct{o}}\sum_j
-\Biggl\|&F_{m,\mathrm{obs},j}F_{m,\mathrm{obs},0}^{-1}\begin{bmatrix}\vct{o}\\1\end{bmatrix}\\
-&-\begin{bmatrix}\vct{o}\\1\end{bmatrix}\Biggr\|^2 .
+\vct{p}_{X,\mathrm{est}}
+&=\vct{o}_{w,\mathrm{est}}-R_{X,\mathrm{est}}
+\left(\sum_{i=1}^{3}\theta_{i,0,\mathrm{est}}\vct{d}_{i,\mathrm{est}}+\vct{p}_{\mathrm{cw}}\right),\\
+F_{X,\mathrm{est}}&=\Frame(R_{X,\mathrm{est}},\vct{p}_{X,\mathrm{est}}).
+\end{aligned}
+\end{equation*}
+
+
+\subsubsection{Packing the initial free parameters}\label{sec:math-lsq}
+With $\vct{\phi}_2^T\vct{e}_x=0$ and one home distortion value fixed per joint, the free-parameter counts are
+\begin{equation*}
+\begin{array}{c|cccc}
+&\text{base}&\text{axis tilts}&\text{tool}&\text{distortion values}\\\hline
+\text{count}&6&9&6&\sum_{k=1}^{6}L_k
+\end{array}.
+\end{equation*}
+
+The assignment PDF does not prescribe the reference transform used for the base correction. One choice is the known nominal base $F_X=F_{\mathrm{tracker}}^{-1}F_{\mathrm{rob}}$. The course-code template instead suggests estimating the base from the observations with nominal kinematics. We follow that suggestion here; no accuracy advantage of either choice is assumed.
+
+The nominal-model relation gives
+\begin{equation*}
+F_{m,\mathrm{obs},j}\approx F_XF_{\mathrm{ee}}(\vct{\theta}_j)
+\quad\Longrightarrow\quad
+F_{m,\mathrm{obs},j}F_{\mathrm{ee}}(\vct{\theta}_j)^{-1}\approx F_X.
+\end{equation*}
+Each observation supplies a base estimate. Combine these estimates using the position mean and rotation least squares described above:
+\begin{equation*}
+F_{X,\mathrm{init}}
+=\operatorname{AverageFrames}_j
+\left(F_{m,\mathrm{obs},j}F_{\mathrm{ee}}(\vct{\theta}_j)^{-1}\right)
+=\Frame(R_{X,\mathrm{init}},\vct{p}_{X,\mathrm{init}}).
+\end{equation*}
+The resulting $F_{X,\mathrm{init}}$ is held fixed as the correction reference; it can still contain effects of nominal-kinematics errors. The adjustable base pose is
+\begin{equation*}
+F_X(\vct{x})=F_{X,\mathrm{init}}
+\Frame\!\left(R(\vct{\alpha}_X),\vct{\epsilon}_X\right).
+\end{equation*}
+To reproduce the base estimate $F_{X,\mathrm{est}}$ obtained above, initialize the correction parameters by
+\begin{equation*}
+\begin{aligned}
+\Frame\!\left(R(\vct{\alpha}_X),\vct{\epsilon}_X\right)
+&=F_{X,\mathrm{init}}^{-1}F_{X,\mathrm{est}},\\
+R(\vct{\alpha}_X)&=R_{X,\mathrm{init}}^TR_{X,\mathrm{est}},\\
+\vct{\epsilon}_X&=R_{X,\mathrm{init}}^T
+(\vct{p}_{X,\mathrm{est}}-\vct{p}_{X,\mathrm{init}}).
+\end{aligned}
+\end{equation*}
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Initialization detail & Setting \\\midrule
+Repeated homings & $H=5$ by default \\
+Wrist-axis sample filter & Computed rotation-vector norm $<2.8$\,rad \\
+Angular-travel calculation & All wrist samples \\
+Single-joint initialization & Recorded reference and at least two stops per joint \\
+Missing initialization data & Fall back to the current parameter vector \\
+Optional initialization mode & Keep current parameters without the single-joint calculation \\
+Stored distortion parameters & Deviations from the measured home distortion value \\
+Repeat order (report / current code) & Separated visits / consecutive commands \\
+\bottomrule
+\end{tabular}
+\caption{Initialization settings.}
+\end{table}
+The wrist-axis filter avoids rotation-vector axis ambiguity near $\pi$. Its $2.8$\,rad threshold is an implementation choice, not a derived accuracy condition; it does not exclude observations from the angular-travel calculation.
+
+\subsubsection{Joint refinement using all observed poses}\label{sec:math-pose-fit}
+\paragraph{Prediction and residual.}
+For each recorded $\vct{\theta}_j$, evaluate the piecewise-linear distortion and the complete kinematics to form
+\begin{equation*}
+\hat F_{m,j}(\vct{x})=F_X(\vct{x})\hat F_{\mathrm{ee}}(\vct{\theta}_j;\vct{x})
+=\Frame(\hat R_{m,j}(\vct{x}),\hat{\vct{p}}_{m,j}(\vct{x})).
+\end{equation*}
+Use modeled physical joint values
+\begin{equation*}
+\theta_{k,\mathrm{est}}=\theta_k+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_k).
+\end{equation*}
+Compare the prediction with the observed pose:
+\begin{equation}\label{eq:residual}
+\begin{aligned}
+\hat F_{m,j}(\vct{x})^{-1}F_{m,\mathrm{obs},j}
+&=\Frame\!\left(\exp[\sk(\vct{\alpha}_j)],\vct{\epsilon}_j\right),\\
+\exp[\sk(\vct{\alpha}_j)]&=\hat R_{m,j}^TR_{m,\mathrm{obs},j},\\
+\vct{\epsilon}_j&=\hat R_{m,j}^T(\vct{p}_{m,\mathrm{obs},j}-\hat{\vct{p}}_{m,j}).
 \end{aligned}
 \end{equation}
-the same problem as pivot calibration: one point that all the motions leave in place. The base frame $F_{X,\mathrm{est}}$ then follows from three conditions on directions and points, and the tool from the observation at the base:
-\begin{itemize}
-\item orientation: $F_{X,\mathrm{est}}\tilde{\vct{d}}_1=\tilde{\vct{\ell}}_{1,\mathrm{est}}$, since $\vct{d}^*_1=\vct{d}_1$, which fixes two of its three rotational degrees of freedom; for the turn about $\vct{x}$ we require $F_{X,\mathrm{est}}$ to map the $xy$ plane of the base onto the plane spanned by $\vct{\ell}_{1,\mathrm{est}}$ and $\vct{\ell}_{2,\mathrm{est}}$, i.e.\ we place $\vct{d}^*_2$ in the $xy$ plane of the base. Section~\ref{sec:math-turn} shows that the data cannot determine this turn better;
-\item position: at physical home the wrist center is $[500,0,0]^T$ in the base, so $F_{X,\mathrm{est}}$ must map this point onto $\vct{o}_{w,\mathrm{est}}$;
-\item axes and tilts: $\tilde{\vct{d}}_{k,\mathrm{est}}=F_{X,\mathrm{est}}^{-1}\tilde{\vct{\ell}}_{k,\mathrm{est}}$ for all six axes, since the preceding ideal wrist rotations are identity at physical home; then $\vct{\phi}_{k,\mathrm{est}}\approx\vct{d}_k\times\vct{d}_{k,\mathrm{est}}$;
-\item tool: by Eq.~\eqref{eq:actual-parts} at the base, $F^*_{m,0}=F^*_XF_{\mathrm{cw}}F_{\mathrm{we}}\Delta F_{\mathrm{we}}$, so
-\begin{equation*}
-\Delta F_{\mathrm{we},\mathrm{est}}=\bigl(F_{X,\mathrm{est}} F_{\mathrm{cw}}F_{\mathrm{we}}\bigr)^{-1}F_{m,\mathrm{obs},0},
-\end{equation*}
-with the observation $F_{m,\mathrm{obs},0}$ in place of the actual pose.
-\end{itemize}
+Convert $\hat R_{m,j}^TR_{m,\mathrm{obs},j}$ to the rotation vector $\vct{\alpha}_j$, choosing $0\leq\norm{\vct{\alpha}_j}\leq\pi$. Minimize the weighted rotation and translation errors over all observations:
+\begin{equation}\label{eq:lsq}
+\vct{x}_{\mathrm{est}}=\underset{\vct{x}}{\arg\min}
+\sum_j w_j\left[
+\frac{\norm{\vct{\alpha}_j(\vct{x})}^2}{\sigma_R^2}
++\frac{\norm{\vct{\epsilon}_j(\vct{x})}^2}{\sigma_p^2}
+\right].
+\end{equation}
+\paragraph{Marker layout and residual scales.}
+The scales $\sigma_R,\sigma_p$ normalize radians and millimetres and set their relative weights. To choose them, propagate marker random noise through rigid registration, using the same linearization as in Assignment~1. The A2 calibration body has exact local marker coordinates $\vct{a}_k^*$, so no marker-coordinate calibration error is included here.
 
-\subsubsection{Angles between axes}
-Steps~A and~B estimate all six tracker-frame axis directions $\vct{\ell}_{1,\mathrm{est}},\dots,\vct{\ell}_{6,\mathrm{est}}$. Their pairwise angles estimate the angles between the physical axes and do not depend on the choice of base frame (hint~1(c) of the handout).
-
-\subsubsection{Held-joint changes in observed data}
-Steps~A--C fit the pure single-joint pose $F_{\mathrm{ideal},j}$ to actual observations. To assess the resulting error $\Delta F_{\mathrm{hold},j}$, we must now quantify how far each held physical joint has moved from the homing configuration. For joint $i$ at the reference sample, the joint-error model gives
+Choose four markers at the vertices of a regular tetrahedron centred at the end-effector origin:
 \begin{equation*}
-\theta_{i,0}+\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}(\theta_{i,0})
-+\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0}=0.
+\begin{bmatrix}\vct{a}_1^*&\vct{a}_2^*&\vct{a}_3^*&\vct{a}_4^*\end{bmatrix}
+=\frac{r}{\sqrt3}
+\begin{bmatrix}
+1&1&-1&-1\\
+1&-1&1&-1\\
+1&-1&-1&1
+\end{bmatrix}.
 \end{equation*}
-For every held joint, $\theta_{i,j}=\theta_{i,0}$ with $i\ne k$. The systematic error of a held joint is then unchanged, but its random error is redrawn. Subtracting the reference equation gives the physical displacement of a held joint:
+Then
+\begin{equation*}
+\sum_{k=1}^{4}\vct{a}_k^*=\vct{0},\qquad
+\norm{\vct{a}_k^*}=r,\qquad
+\sum_{k=1}^{4}\vct{a}_k^*(\vct{a}_k^*)^T=\frac{4r^2}{3}I.
+\end{equation*}
+For a small pose error, the change in a marker position is linear in the rotation and translation errors, with coefficient matrix $R[-\sk(\vct{a}_k^*)\ \ I]$. Since $R^TR=I$, the normal matrix for all four markers is
+\begin{equation*}
+\begin{aligned}
+&\sum_{k=1}^{4}
+\begin{bmatrix}-\sk(\vct{a}_k^*)&I\end{bmatrix}^{T}
+\begin{bmatrix}-\sk(\vct{a}_k^*)&I\end{bmatrix}
+=\begin{bmatrix}G&0\\0&4I\end{bmatrix},\\
+&G=\sum_{k=1}^{4}\left(\norm{\vct{a}_k^*}^2I
+-\vct{a}_k^*(\vct{a}_k^*)^T\right)
+=\frac{8r^2}{3}I.
+\end{aligned}
+\end{equation*}
+The zero off-diagonal blocks follow from the zero centroid. With independent marker noise of covariance $\sigma_b^2I$, the linear least-squares pose covariance is therefore
+\begin{equation*}
+\sigma_b^2
+\begin{bmatrix}G&0\\0&4I\end{bmatrix}^{-1}
+=\begin{bmatrix}
+\dfrac{3\sigma_b^2}{8r^2}I&0\\
+0&\dfrac{\sigma_b^2}{4}I
+\end{bmatrix}.
+\end{equation*}
+Thus the tetrahedron gives the same rotational precision about all three axes. For four centred markers within radius $r$, $\operatorname{tr}(G)\leq8r^2$, hence $\lambda_{\min}(G)\leq8r^2/3$; the tetrahedron attains this bound. This justifies its geometry for the chosen marker count, without asserting that four markers are optimal among all counts.
+
+The handout permits $\norm{\vct{a}_k^*}\leq75$\,mm. Increasing $r$ reduces rotation variance for this layout, so choose $r=74.9$\,mm, just inside the limit. With the handout's $\sigma_b=0.1$\,mm, the per-component standard deviations for one registration are
+\begin{equation*}
+\begin{aligned}
+\sigma_p&=\frac{\sigma_b}{\sqrt4}=0.05\,\mathrm{mm},\\
+\sigma_R&=\frac{\sigma_b}{r}\sqrt{\frac38}
+\approx8.2\times10^{-4}\,\mathrm{rad}.
+\end{aligned}
+\end{equation*}
+A rotation residual of magnitude $\sigma_R$ and a translation residual of magnitude $\sigma_p$ therefore contribute equally before multiplication by $w_j$. These are weighting scales, not calibration-accuracy targets. They describe marker random noise for this layout, not the complete residual covariance including joint errors and tracker systematic errors.
+
+\paragraph{Joint iterations.}
+For the numerical iteration, collect the same normalized residuals into a vector:
+\begin{equation*}
+\vct{r}(\vct{x})=
+\begin{bmatrix}
+\vdots\\\sqrt{w_j}\vct{\alpha}_j(\vct{x})/\sigma_R\\
+\sqrt{w_j}\vct{\epsilon}_j(\vct{x})/\sigma_p\\\vdots
+\end{bmatrix}.
+\end{equation*}
+Its squared norm equals the objective above. With the current parameter vector, linearize:
+\begin{equation*}
+\vct{r}(\vct{x}+\vct{\delta})\approx\vct{r}(\vct{x})+J\vct{\delta},\qquad
+J=\frac{\partial\vct{r}}{\partial\vct{x}}.
+\end{equation*}
+Minimize the linearized residual with a trust-region step, then update all free parameters together:
+\begin{equation*}
+\vct{\delta}:\ \min\norm{\vct{r}+J\vct{\delta}}^2
+\quad\text{with step-size control},\qquad
+\vct{x}\leftarrow\vct{x}+\vct{\delta}.
+\end{equation*}
+Recompute the complete predictions after each update.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Joint-fit setting & Implementation value \\\midrule
+Solver & Trust-region reflective least squares \\
+Parameter scaling & Jacobian-column scaling \\
+Cost, step and gradient tolerances & $10^{-12}$ \\
+Maximum function evaluations & $200$ \\
+Bounds passed to this solver & None \\
+Allowed observations & Single-joint and simultaneous multi-joint motion \\
+\bottomrule
+\end{tabular}
+\caption{Numerical settings for the joint pose fit.}
+\end{table}
+
+\subsubsection{Selecting the remaining base turn}\label{sec:math-gauge-choice}
+The fit has used a coordinate choice for the base turn about $\vct{e}_x$. To see why observations cannot choose this turn directly, define $Q(c)=\Frame(R(\vct{e}_x,c),\vct{0})$. Then
+\begin{equation}\label{eq:turn-insert}
+F_X\hat F_{\mathrm{ee}}(\vct{\theta})
+=\bigl(F_XQ(c)\bigr)\bigl(Q(-c)\hat F_{\mathrm{ee}}(\vct{\theta})\bigr).
+\end{equation}
+Select $c$ using the axis-tilt, tool-rotation and base-placement bounds; the pose residual is unchanged.
+
+For each candidate $c$, rotate the fitted axes and tool by $Q(-c)$ and the base by $Q(c)$. The base-placement error relative to nominal workspace placement is
+\begin{equation*}
+\Delta F_{\mathrm{rob}}(c)=F_{\mathrm{tracker}}F_{X,\mathrm{est}}Q(c)F_{\mathrm{rob}}^{-1}.
+\end{equation*}
+Let $\vct{\alpha}_{\mathrm{we}}(c)$ and $\vct{\alpha}_{\mathrm{rob}}(c)$ be the rotation vectors of $Q(-c)\Delta F_{\mathrm{we},\mathrm{est}}$ and $\Delta F_{\mathrm{rob}}(c)$. The transformed tilt angles satisfy
+\begin{equation*}
+\norm{\vct{\phi}_k(c)}=\arccos\!\left(\vct{d}_k^TR(\vct{e}_x,-c)\vct{d}_{k,\mathrm{est}}\right).
+\end{equation*}
+Measure the largest normalized bound violation by
+\begin{equation*}
+\rho(c)=\max\left\{
+\max_{k\in\{2,3,5,6\}}\frac{\norm{\vct{\phi}_k(c)}}{\phi_{\max}},\
+\frac{\norm{\vct{\alpha}_{\mathrm{we}}(c)}}{0.01},\
+\frac{\norm{\vct{\alpha}_{\mathrm{rob}}(c)}}{\alpha^{\max}_{\mathrm{rob}}}
+\right\}.
+\end{equation*}
+Include the base-error term only when the exact tracker placement is supplied. Axis $1,4$ tilt magnitudes are invariant under this turn.
+
+The implementation uses the grid $[-0.1,0.1]$\,rad with spacing $2\times10^{-5}$\,rad. Let $\mathcal C$ contain its accepted points:
+\begin{equation*}
+\begin{aligned}
+\mathcal C&=\{c\text{ on the grid}:\rho(c)\leq1\},\\
+c_{\mathrm{est}}&=\begin{cases}
+\tfrac12(\min\mathcal C+\max\mathcal C),&\mathcal C\ne\varnothing,\\
+\underset{c\text{ on the grid}}{\arg\min}\rho(c),&\mathcal C=\varnothing.
+\end{cases}
+\end{aligned}
+\end{equation*}
+The range, spacing and fallback are implementation choices. A midpoint minimizes the largest distance to the accepted endpoints; it does not measure the true turn.
+
+\subsubsection{Using the fitted model for forward and inverse kinematics}\label{sec:math-kinematics}
+\paragraph{Forward prediction.}
+Evaluate the full chain with fitted tilts, fitted tool error and interpolated distortion values, and apply the selected coordinate turn:
+\begin{equation*}
+\Fun{ImprovedFwdKins}(\vct{\theta})=Q(-c)\hat F_{\mathrm{ee}}(\vct{\theta}).
+\end{equation*}
+Here $\hat F_{\mathrm{ee}}$ uses the fitting coordinates. Return the base $F_{X,\mathrm{est}}Q(c)$ so that
+\begin{equation*}
+\bigl(F_{X,\mathrm{est}}Q(c)\bigr)\Fun{ImprovedFwdKins}(\vct{\theta})
+=F_{X,\mathrm{est}}\hat F_{\mathrm{ee}}(\vct{\theta}).
+\end{equation*}
+
+\paragraph{Inverse solution.}
+For target $F$ in the returned base coordinates, form the pose residual
+\begin{equation*}
+\Fun{ImprovedFwdKins}(\vct{\theta})^{-1}F
+=\Frame\!\left(\exp[\sk(\vct{\alpha})],\vct{\epsilon}\right),\qquad
+\vct{g}(\vct{\theta})=\begin{bmatrix}\vct{\alpha}\\\vct{\epsilon}\end{bmatrix}.
+\end{equation*}
+Start from each nominal wrist branch, with nominal stage coordinates, and refine by a damped least-squares step:
+\begin{equation}\label{eq:ik-iter}
+\begin{aligned}
+\vct{\delta}&=-\left[J^TJ+\lambda\diag\bigl(\diag(J^TJ)+10^{-12}\vct{1}\bigr)\right]^{-1}J^T\vct{g},\\
+\vct{\theta}&\leftarrow\vct{\theta}+\operatorname{clip}(\vct{\delta},-\vct{\delta}_{\max},\vct{\delta}_{\max}),\qquad
+J=\frac{\partial\vct{g}}{\partial\vct{\theta}}.
+\end{aligned}
+\end{equation}
+\begin{table}[H]
+\centering\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Inverse-solver setting & Implementation value \\\midrule
+Jacobian forward-difference steps & $10^{-3}$\,mm; $10^{-6}$\,rad \\
+Componentwise step limits & $50$\,mm; $0.3$\,rad \\
+Initial damping & $\lambda=10^{-4}$ \\
+Rejected trial & $\lambda\leftarrow10\lambda$ \\
+Accepted trial & $\lambda\leftarrow\max(\lambda/10,10^{-12})$ \\
+Damping-loop exit & Residual decreases or $\lambda>10^6$ \\
+Maximum iterations per branch & $50$ \\
+Residual-norm tolerance & $10^{-10}$ \\
+Wrapped angles & $\theta_4,\theta_6\in[-\pi,\pi)$ \\
+\bottomrule
+\end{tabular}
+\caption{Numerical controls for inverse kinematics.}
+\end{table}
+Return the in-limit branch nearest the supplied seed, or the current command when no seed is supplied:
+\begin{equation*}
+\vct{\theta}_{\mathrm{return}}
+=\underset{\substack{\text{refined in-limit}\\\text{nominal wrist branches}}}{\arg\min}
+\norm{\vct{\theta}-\vct{\theta}_{\mathrm{seed}}}.
+\end{equation*}
+Raise an error if no refined branch is within limits. An in-limit return is not separately tested against the residual tolerance after the iteration limit.
+
+\subsection{Error analysis and parameter uncertainty}\label{sec:math-errors}
+The following analysis distinguishes exact cancellations, random-noise reduction and errors retained in the fitted parameters.
+
+\subsubsection{What each operation removes or retains}
+\begin{table}[H]
+\centering\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.33\textwidth}>{\raggedright\arraybackslash}p{0.36\textwidth}@{}}
+\toprule
+Operation & Effect used in the pipeline & Remaining error or limitation \\\midrule
+Relative wrist rotation & Cancels the common tool rotation and subsequent held rotations & Held wrist changes and tracker errors remain; principal angles have branches \\
+Stage position difference & Cancels the fixed wrist/tool position when held physical joints are fixed & Held-joint changes and tracker position errors remain \\
+Repeated homing & Averages independent homing errors to estimate an absolute distortion value & Finite-mean error and distortion variation are retained in the fixed home estimate \\
+Repeated arrivals at one command & Reduces independent joint and tracker random components & Fixed systematic errors and shared-reference uncertainty remain \\
+Initial encoder-travel approximation & Produces a simple direction fit & Does not estimate physical travel or systematic distortion exactly \\
+Joint pose fit & Adjusts base, axes, tool and distortion values to reduce observed residuals & Noise, unmodelled tracker distortion, interpolation error and weakly determined parameters remain \\
+Base-turn convention and bounds & Selects one representation of an observationally indistinguishable model & Does not recover a unique true base turn from tracker data \\
+\bottomrule
+\end{tabular}
+\caption{Exact cancellations, statistical reductions and approximations.}
+\end{table}
+
+\subsubsection{Homing and nonzero reference-joint uncertainty}
+The defined home estimate has the exact error
+\begin{equation*}
+\begin{aligned}
+&\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\bar\theta_{\mathrm{encoders},k})
+-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\bar\theta_{\mathrm{encoders},k})\\
+&\quad=\frac1H\sum_{h=1}^{H}
+\left[\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{\mathrm{encoders},k}^{(h)})
+-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\bar\theta_{\mathrm{encoders},k})\right]\\
+&\qquad+\frac1H\sum_{h=1}^{H}\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},h}.
+\end{aligned}
+\end{equation*}
+Using the handout's derivative bound, the error in fixing the distortion at the mean home encoder position satisfies
+\begin{equation*}
+\begin{aligned}
+&\left|\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\bar\theta_{\mathrm{encoders},k})
++\bar\theta_{\mathrm{encoders},k}\right|\\
+&\quad\leq\left|\frac1H\sum_{h=1}^{H}\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},h}\right|
++\frac{\omega^{\mathrm{rob}}_{k,\mathrm{sys}}}{H}
+\sum_{h=1}^{H}\left|\theta_{\mathrm{encoders},k}^{(h)}-\bar\theta_{\mathrm{encoders},k}\right|.
+\end{aligned}
+\end{equation*}
+For independent homings,
+\begin{equation*}
+\operatorname{Std}\!\left(\frac1H\sum_h\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},h}\right)
+=\frac{\sigma_{k,\mathrm{rnd}}}{\sqrt H}.
+\end{equation*}
+The derivative-bound term accounts for distortion variation between home readings. Both contributions remain when the estimated home value is fixed in the fit.
+
+For any reference command, the physical value and the modeled estimate differ by
+\begin{equation*}
+\begin{aligned}
+\theta_{k,0,\mathrm{est}}-\theta^*_{k,0}
+&=\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_{k,0})
+-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{k,0})\\
+&\quad-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},0}.
+\end{aligned}
+\end{equation*}
+For the constant home-based initialization,
+\begin{equation*}
+\begin{aligned}
+&\left|\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_{k,0})
+-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{k,0})\right|\\
+&\quad\leq
+\left|\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\bar\theta_{\mathrm{encoders},k})
+-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\bar\theta_{\mathrm{encoders},k})\right|\\
+&\qquad+\omega^{\mathrm{rob}}_{k,\mathrm{sys}}\left|\theta_{k,0}-\bar\theta_{\mathrm{encoders},k}\right|.
+\end{aligned}
+\end{equation*}
+Joint refinement adjusts free distortion values; the home value remains fixed.
+
+\subsubsection{Held-joint changes and shared reference errors}
+For a held joint $i\ne k$, compare one reference move with a later move at the same encoder command. Subtracting the two physical-joint equations cancels the systematic distortion exactly:
 \begin{equation}\label{eq:held-joint-error}
-\begin{aligned}
-\delta\theta_{i,j}
-&\equiv\theta^*_{i,j}-\theta^*_{i,0}\\
-&=\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},j}
--\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0},\qquad i\ne k.
-\end{aligned}
+\delta\theta_{i,j}\equiv\theta^*_{i,j}-\theta^*_{i,0}
+=\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},j}-\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0}.
 \end{equation}
-Consequently, keeping the encoder command fixed does not keep the physical joint fixed. To compare two distinct samples sharing that homing reference, use observation indices $j$ and $j'$, with $j,j'\geq1$ and $j\ne j'$. For independent random errors of variance $\sigma_{i,\mathrm{rnd}}^2$ at each move and homing,
+For independent move errors,
 \begin{equation}\label{eq:held-joint-statistics}
 \begin{aligned}
 \mathbb E[\delta\theta_{i,j}]&=0,&
 \operatorname{Var}(\delta\theta_{i,j})&=2\sigma_{i,\mathrm{rnd}}^2,\\
-\operatorname{Cov}(\delta\theta_{i,j},\delta\theta_{i,j'})&=\sigma_{i,\mathrm{rnd}}^2,
-&&j\ne j',
+\operatorname{Cov}(\delta\theta_{i,j},\delta\theta_{i,j'})&=\sigma_{i,\mathrm{rnd}}^2,&&j\ne j'.
 \end{aligned}
 \end{equation}
-where samples $j$ and $j'$ use the same homing reference $j=0$. The covariance arises from the shared random error $\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0}$. For a fixed homing reference, averaging over newly drawn move errors gives
+The reference error is shared. Conditional on it,
 \begin{equation*}
 \mathbb E[\delta\theta_{i,j}\mid\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0}]
 =-\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0}.
 \end{equation*}
-The new move errors have zero mean, but the same reference error $\Delta\theta^{\mathrm{rob}}_{i,\mathrm{rnd},0}$ is subtracted from every sample. Averaging more moves can reduce the new random errors but cannot remove this common offset. Further tracker readings without another move do not redraw the joint errors at all.
+For a reference averaged over independent moves, the shared covariance becomes the variance of that reference mean:
+\begin{equation*}
+\operatorname{Cov}(\delta\theta_{i,j},\delta\theta_{i,j'})=
+\operatorname{Var}(\text{reference joint-error mean}),\qquad j\ne j'.
+\end{equation*}
 
-\subsubsection{Propagation of held-joint errors}
-To propagate the held-joint changes into rotational and translational errors, write
+To quantify the local pose effect, let $\vct{r}_{m,j}^*$ be the tracker-frame vector from wrist center to end-effector origin, and let
 \begin{equation*}
-\Delta F_{\mathrm{hold},j}=\Frame\bigl(R(\vct{\alpha}_{\mathrm{hold},j}),\vct{\epsilon}_{\mathrm{hold},j}\bigr).
+\vct{u}_{i,j}^*=R_X^*\left(\prod_{h=4}^{i-1}R(\vct{d}_h^*,\theta^*_{h,j})\right)\vct{d}_i^*
 \end{equation*}
-Let $R_{\mathrm{ideal},j}$ be the rotation of $F_{\mathrm{ideal},j}$, and let $\vct{r}_{\mathrm{ideal},j}$ point from the wrist center to the end-effector origin in tracker coordinates. A held stage contributes translation $R^*_X\vct{d}^*_i\,\delta\theta_{i,j}$ and no rotation. For a held wrist joint $i\geq4$, the unit axis in tracker coordinates at the ideal configuration is
-\begin{equation*}
-\vct{u}_{i,j}=
-\begin{cases}
-R^*_X R(\vct{d}^*_k,\theta^*_{k,j})\vct{d}^*_i,&4\leq k<i,\\
-R^*_X\vct{d}^*_i,&\text{otherwise}.
-\end{cases}
-\end{equation*}
-The active wrist joint rotates the axis of held joint $i$ only when $4\leq k<i$; all other preceding physical wrist angles are zero in $F_{\mathrm{ideal},j}$. Its first-order effects are rotation $\vct{u}_{i,j}\delta\theta_{i,j}$ and translation $(\vct{u}_{i,j}\times\vct{r}_{\mathrm{ideal},j})\delta\theta_{i,j}$. Expressed as the right-multiplied pose error of Eq.~\eqref{eq:held-pose-error}, these give
+be the actual tracker-frame wrist-axis direction at sample $j$. The product contains only rotations before axis $i$; for $i=4$ it is $I$. For the right-multiplied pose variation expressed in end-effector coordinates,
 \begin{equation}\label{eq:held-pose-jacobian}
 \begin{aligned}
 \begin{bmatrix}\vct{\alpha}_{\mathrm{hold},j}\\\vct{\epsilon}_{\mathrm{hold},j}\end{bmatrix}
-&\approx\sum_{i\ne k}A_{i,j}\,\delta\theta_{i,j},\\
-A_{i,j}&=
-\begin{cases}
-\begin{bmatrix}\vct{0}\\(R_{\mathrm{ideal},j})^T R^*_X\vct{d}^*_i\end{bmatrix},&i\leq3,\\[6pt]
-\begin{bmatrix}(R_{\mathrm{ideal},j})^T\vct{u}_{i,j}\\(R_{\mathrm{ideal},j})^T(\vct{u}_{i,j}\times\vct{r}_{\mathrm{ideal},j})\end{bmatrix},&i\geq4.
+&\approx\sum_{i\ne k}A_{i,j}\delta\theta_{i,j},\\
+A_{i,j}&=\begin{cases}
+\begin{bmatrix}\vct{0}\\(R_{m,j}^*)^TR_X^*\vct{d}_i^*\end{bmatrix},&i\leq3,\\[4pt]
+\begin{bmatrix}(R_{m,j}^*)^T\vct{u}_{i,j}^*\\(R_{m,j}^*)^T(\vct{u}_{i,j}^*\times\vct{r}_{m,j}^*)\end{bmatrix},&i\geq4.
 \end{cases}
 \end{aligned}
 \end{equation}
-Here $A_{i,j}$ is the pose-error column for held joint $i$; the approximation drops second-order products of the small random displacements, not the first-order held-joint errors. Equation~\eqref{eq:held-joint-statistics} therefore gives the first-order pose covariance
+Keep the active physical value fixed. Evaluating $A_{i,j}$ at the actual configuration changes only second-order terms; the first-order covariance is
 \begin{equation}\label{eq:held-pose-covariance}
-C_{\mathrm{hold},j}\approx2\sum_{i\ne k}\sigma_{i,\mathrm{rnd}}^2 A_{i,j}A_{i,j}^T.
+C_{\mathrm{hold},j}\approx2\sum_{i\ne k}\sigma_{i,\mathrm{rnd}}^2A_{i,j}A_{i,j}^T.
 \end{equation}
-The error scale can be checked from the handout's values. Since $F^*_{\mathrm{we}}=F_{\mathrm{we}}\Delta F_{\mathrm{we}}$ and $\norm{\vct{\epsilon}_{\mathrm{we}}}\leq0.5$\,mm, the wrist-to-tool distance satisfies $\norm{\vct{r}_{\mathrm{ideal},j}}\leq100+0.5=100.5$\,mm. Write $m_t$ and $m_r$ for the numbers of held stages and held wrist joints. Taking traces of the rotational and translational covariance blocks gives
+The handout's tool error bound gives a wrist-to-tool distance at most $100.5$\,mm. With $m_t$ held stages and $m_r$ held wrist joints,
 \begin{equation}\label{eq:held-noise-scale}
 \begin{aligned}
-\sqrt{\mathbb E\norm{\vct{\alpha}_{\mathrm{hold},j}}^2}
-&\lesssim\sqrt{2m_r}\,10^{-4}\ \mathrm{rad},\\
-\sqrt{\mathbb E\norm{\vct{\epsilon}_{\mathrm{hold},j}}^2}
-&\lesssim\sqrt{2m_t(0.005)^2+2m_r(100.5\cdot10^{-4})^2}\ \mathrm{mm}.
+\sqrt{\mathbb E\norm{\vct{\alpha}_{\mathrm{hold},j}}^2}&\lesssim\sqrt{2m_r}\,10^{-4}\ \mathrm{rad},\\
+\sqrt{\mathbb E\norm{\vct{\epsilon}_{\mathrm{hold},j}}^2}&\lesssim\sqrt{2m_t(0.005)^2+2m_r(100.5\cdot10^{-4})^2}\ \mathrm{mm}.
 \end{aligned}
 \end{equation}
-Using $m_t,m_r\leq3$ gives conservative first-order RMS scales of $2.45\times10^{-4}$\,rad and $0.0275$\,mm. These are noise scales, not deterministic bounds or guarantees on the fitted parameters. Steps~A--C use the ideal geometry for initialization while retaining $\Delta F_{\mathrm{hold},j}$ as a stochastic error source. The covariance $C_{\mathrm{hold},j}$ describes $\Delta F_{\mathrm{hold},j}$, not the error in $\vct{\ell}_{k,\mathrm{est}}$. In Step~A, the residual decomposition includes $\Delta R_{\mathrm{hold},j}$, $\Delta R_{m,j}$ and the shared reference error $\Delta R_{m,0}$. Bounding the axis-estimation error requires propagating all of them through the singular-vector fit, including their correlations and the separation of the singular values determined by the joint rotations. The pose-error scales above therefore do not establish an axis-accuracy bound or guarantee the final calibration accuracy.
+Taking $m_t,m_r\leq3$ gives first-order RMS scales $2.45\times10^{-4}$\,rad and $0.0275$\,mm. These are single-arrival pose-change scales, not deterministic bounds or accuracy bounds for the estimated axes.
 
-\subsection{Joint refinement by least squares}\label{sec:math-lsq}
-The single-joint calculations provide initial estimates:
+\subsubsection{Axis initialization, angle choices and travel errors}
+\paragraph{Step A.}
+Write $\Delta\theta_{k,j}^*=\theta_{k,j}^*-\theta_{k,0}^*$. On a consistent angle branch, the rotation-vector residual at the true tracker-frame axis separates exactly as
 \begin{equation*}
 \begin{aligned}
-&\text{axes: }\vct{d}_{k,\mathrm{est}},
-&&\text{distortion values: }\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_k^{(l)}),\\
-&\text{base: }F_{X,\mathrm{est}},
-&&\text{tool error: }\Delta F_{\mathrm{we},\mathrm{est}}.
+\vct{v}_j-(\theta_{k,j}-\theta_{k,0})\vct{\ell}_k^*
+&=\underbrace{\vct{v}_j-\Delta\theta_{k,j}^*\vct{\ell}_k^*}_{\text{held wrist changes, tracker errors and branch choice}}\\
+&\quad+\underbrace{\bigl[\Delta\theta_{k,j}^*-(\theta_{k,j}-\theta_{k,0})\bigr]\vct{\ell}_k^*}_{\text{physical travel differs from encoder change}}.
 \end{aligned}
 \end{equation*}
-Use these estimates to initialize $\vct{x}$ and refine its components together against all observed poses $F_{m,\mathrm{obs},j}$.
-
-\subsubsection{From predictions to a least-squares objective}
-For a trial parameter vector $\vct{x}$, we evaluate $\hat F_{\mathrm{ee}}(\vct{\theta}_j;\vct{x})$ with the estimated axes $\vct{d}_{k,\mathrm{est}}$, tool transform $F_{\mathrm{we}}\Delta F_{\mathrm{we},\mathrm{est}}$ and interpolated joint values $\theta_{k,\mathrm{est}}=\theta_k+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_k)$. The random joint errors $\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd}}$ are omitted from $\hat F_{\mathrm{ee}}$ because their realizations are unknown. Multiplying $\hat F_{\mathrm{ee}}(\vct{\theta}_j;\vct{x})$ by the trial base transform $F_X(\vct{x})$ predicts the tracker-frame pose $F_X(\vct{x})\hat F_{\mathrm{ee}}(\vct{\theta}_j;\vct{x})$. Comparing $F_X(\vct{x})\hat F_{\mathrm{ee}}(\vct{\theta}_j;\vct{x})$ directly with the observed pose $F_{m,\mathrm{obs},j}$ gives
-\begin{equation}\label{eq:residual}
-\begin{aligned}
-\Frame\bigl(I+\sk(\vct{\alpha}_j),\vct{\epsilon}_j\bigr)
-&=F_{m,\mathrm{obs},j}^{-1}\,F_X(\vct{x})\hat F_{\mathrm{ee}}(\vct{\theta}_j;\vct{x}),\\
-\vct{r}_j(\vct{x})&=[\vct{\alpha}_j;\vct{\epsilon}_j].
-\end{aligned}
-\end{equation}
-where $\vct{r}_j$ contains the rotational and translational residuals of sample $j$. Tracker errors, joint repeatability and interpolation errors generally prevent all residuals from vanishing, even when the fixed kinematic parameters are correct. We therefore choose weighted least squares to find one parameter vector that jointly explains the observations by minimizing their total weighted squared residual:
-\begin{equation}\label{eq:lsq}
-\vct{x}_{\mathrm{est}}=\arg\min_{\vct{x}}\sum_j\norm{W_j\,\vct{r}_j(\vct{x})}^2,
-\end{equation}
-where the weight $W_j$ scales rotation and translation by their expected measurement errors.
-
-\subsubsection{Solving the joint estimation problem}
-Let $\vct{r}(\vct{x})$ be all weighted residuals stacked into one vector. Since $\vct{r}$ is nonlinear in $\vct{x}$, the minimum is found by Gauss--Newton steps from a starting value. Near the current $\vct{x}$,
-\begin{equation*}
-\vct{r}(\vct{x}+\vct{\delta})\approx\vct{r}(\vct{x})+J\vct{\delta},\qquad J=\frac{\partial\vct{r}}{\partial\vct{x}},
-\end{equation*}
-where each column of $J$ tells how all residuals change when one parameter changes. The step minimizing $\norm{\vct{r}+J\vct{\delta}}^2$ solves
-\begin{equation}\label{eq:gauss-newton}
-J^TJ\,\vct{\delta}=-J^T\vct{r},
-\end{equation}
-and $\vct{x}\leftarrow\vct{x}+\vct{\delta}$ is repeated until $\vct{\delta}$ is negligible. The initial estimates and parameter identifiability play different roles in this refinement:
-\begin{itemize}
-\item Gauss--Newton is a local method. We initialize $\vct{x}$ with the single-joint calibration estimates rather than relying solely on the nominal parameters.
-\item Eq.~\eqref{eq:gauss-newton} has a unique solution only if $J^TJ$ is invertible, i.e.\ if $J$ has full column rank. If some direction $\vct{v}$ of parameter change leaves all residuals unchanged, $J\vct{v}=\vct{0}$, then $\vct{\delta}$ and $\vct{\delta}+s\vct{v}$ fit equally well for every $s$, and the parameters are not determined. Section~\ref{sec:math-turn} shows that the parameter vector of Eq.~\eqref{eq:params} has exactly one such direction and removes it.
-\end{itemize}
-The fit uses any samples, including samples in which several joints move together.
-
-\subsection{Which parameters the data determine}\label{sec:math-turn}
-A direction $\vct{v}$ with $J\vct{v}=\vct{0}$ exists if two different parameter vectors predict the same pose for every sample. By Eq.~\eqref{eq:reading-error}, the actual pose $F^*_XF^*_{\mathrm{ee}}(\vct{\theta})$ differs from an observation only by the observation error, so the tracker sees only this product, never the base $F^*_X$ and the chain $F^*_{\mathrm{ee}}(\vct{\theta})$ separately: two models that give the same product for every $\vct{\theta}$ produce the same observations, and homing distinguishes them only if they assign different physical joint angles to the same encoder values.
-
-\subsubsection{The turn of the base about the first axis}
-The rotation of the base $F^*_X$ has three degrees of freedom. The single-joint motions give $\tilde{\vct{\ell}}_1=F^*_X\tilde{\vct{d}}_1$ with $\vct{d}_1=\vct{x}$ exact, which fixes two of them. The third, the turn of the base about $\vct{x}$, would follow from $\tilde{\vct{\ell}}_2=F^*_X\tilde{\vct{d}}^*_2$ if $\vct{d}^*_2$ were known, but $\vct{d}^*_2$ is tilted by the unknown $\vct{\phi}_2$. The question is whether a turn of the base about $\vct{x}$ can be traded against the tilts.
-
-Describe the same robot with the base turned by $c$ about $\vct{x}$ and, relative to this base, every axis and the tool turned back by $-c$: the robot in the tracker frame is unchanged. The observations cannot tell the two descriptions apart. In formulas, with $Q(c)=\Frame(R(\vct{x},c),\vct{0})$ the turn by $c$ about $\vct{x}$ as a frame, this is the insertion of $Q(c)\,Q(-c)=I$ after the base:
-\begin{equation}\label{eq:turn-insert}
-F^*_XF^*_{\mathrm{ee}}(\vct{\theta})=\bigl(F^*_XQ(c)\bigr)\bigl(Q(-c)\,F^*_{\mathrm{ee}}(\vct{\theta})\bigr).
-\end{equation}
-The transformed base is $F^*_XQ(c)$. We must show that $Q(-c)F^*_{\mathrm{ee}}(\vct{\theta})$ can still be represented by the same kinematic chain, with transformed axis directions and tool error. A rotation frame $Q$ can be moved to the right past a translation frame, which turns its translation by $Q$ and leaves a translation along the axis of $Q$ unchanged, and past a rotation frame $\Frame(R(\vct{d},\theta),\vct{0})$, which turns its axis by $Q$ and keeps its angle. With $Q(-c)$ and the chain of Eq.~\eqref{eq:actual-fk}:
-\begin{align*}
-Q(-c)\,F^*_{\mathrm{ee}}(\vct{\theta})
-&=Q(-c)\,F^*_c\,F_{\mathrm{cw}}\,F^*_w\,F_{\mathrm{we}}\,\Delta F_{\mathrm{we}}\\
-&=F'_c\,Q(-c)\,F_{\mathrm{cw}}\,F^*_w\,F_{\mathrm{we}}\,\Delta F_{\mathrm{we}}
-&&F'_c:\ \text{axes }\tilde{\vct{d}}'_i=Q(-c)\tilde{\vct{d}}^*_i\\
-&=F'_c\,F_{\mathrm{cw}}\,Q(-c)\,F^*_w\,F_{\mathrm{we}}\,\Delta F_{\mathrm{we}}
-&&[500,0,0]^T\text{ lies along }\vct{x}\\
-&=F'_c\,F_{\mathrm{cw}}\,F'_w\,Q(-c)\,F_{\mathrm{we}}\,\Delta F_{\mathrm{we}}
-&&F'_w:\ \text{axes }\tilde{\vct{d}}'_k=Q(-c)\tilde{\vct{d}}^*_k\\
-&=F'_c\,F_{\mathrm{cw}}\,F'_w\,F_{\mathrm{we}}\,Q(-c)\,\Delta F_{\mathrm{we}}
-&&[100,0,0]^T\text{ lies along }\vct{x}.
-\end{align*}
-The result is again the chain of Eq.~\eqref{eq:actual-fk}, with the same joint angles, the axes $\tilde{\vct{d}}'_i=Q(-c)\tilde{\vct{d}}^*_i$ and the tool error $\Delta F'_{\mathrm{we}}=Q(-c)\Delta F_{\mathrm{we}}$; call it $F'_{\mathrm{ee}}$. It is an admissible model, since a turn about $\vct{x}$ leaves $\vct{d}_1=\vct{x}$ unchanged. By Eq.~\eqref{eq:turn-insert},
-\begin{equation}\label{eq:turn-chain}
-F^*_XF^*_{\mathrm{ee}}(\vct{\theta})=\bigl(F^*_XQ(c)\bigr)\,F'_{\mathrm{ee}}(\vct{\theta})\quad\text{for every }\vct{\theta},
-\end{equation}
-so the turned base, axes and tool give the same observations and the same joint angles: neither the tracker nor homing determines $c$.
-
-The turn must be about $\vct{x}$: a turn about any other direction would change $\vct{d}_1$, which has no tilt parameter, and would not commute with the translations of $F_{\mathrm{cw}}$ and $F_{\mathrm{we}}$, which both lie along $\vct{x}$. In the parameters of Table~\ref{tab:params}, the turn changes $\vct{\alpha}_X$, the tilts of axes 2, 3, 5, 6 and $\vct{\alpha}_{\mathrm{we}}$ together; this combination is the direction $\vct{v}$ with $J\vct{v}=\vct{0}$.
-
-\subsubsection{Directions removed by homing}
-The same construction gives other changes that leave all products $F^*_XF^*_{\mathrm{ee}}(\vct{\theta})$ unchanged: a shift $\vct{s}$ of the base compensated by the stages, with every $\Delta\theta^{\mathrm{rob}}_{i,\mathrm{sys}}$, $i\leq3$, shifted by the constant $-\vct{d}_i\cdot\vct{s}$, or a turn inserted between two wrist joints, compensated by a constant shift of a wrist joint's distortion. Each requires a constant shift of a whole distortion function, and so changes the physical joint angle that the model assigns to each encoder value. Homing measures an absolute value of every distortion function (Eq.~\eqref{eq:home-distortion}), which forbids such shifts. Without homing these would be further directions with $J\vct{v}=\vct{0}$; with it, the turn about $\vct{x}$ is the only one, since it leaves every physical joint angle unchanged.
-
-\subsubsection{Removing the turn and choosing it afterwards}
-The direction is removed by fixing one parameter along it, a convention:
-\begin{equation}\label{eq:turn-convention}
-\vct{\phi}_2\cdot\vct{x}=0,
-\end{equation}
-i.e.\ $\vct{d}^*_2$ lies in the $xy$ plane of the base, as already used in Step~C. The tilt of axis 2 then has one component, the parameter vector has $9$ tilt components, and $J$ has full column rank. After the fit, the turn is chosen from the only information about it. After a turn by $c$ the estimated model has the base $F_{X,\mathrm{est}}Q(c)$, the axes and the tool error
-\begin{equation*}
-\tilde{\vct{d}}_{k,\mathrm{est}}(c)=Q(-c)\,\tilde{\vct{d}}_{k,\mathrm{est}},\qquad\Delta F_{\mathrm{we},\mathrm{est}}(c)=Q(-c)\,\Delta F_{\mathrm{we},\mathrm{est}},
-\end{equation*}
-and the base placement error relative to the nominal base $F_{\mathrm{rob}}$ becomes
-\begin{equation*}
-\Delta F_{\mathrm{rob}}(c)=F_{\mathrm{tracker}}\,F_{X,\mathrm{est}}\,Q(c)\,F_{\mathrm{rob}}^{-1}.
-\end{equation*} Let $\norm{\vct{\phi}_k(c)}$ be the angle between $\vct{d}_{k,\mathrm{est}}(c)$ and $\vct{d}_k$, and $\norm{\vct{\alpha}_{\mathrm{we}}(c)}$, $\norm{\vct{\alpha}_{\mathrm{rob}}(c)}$ the rotation angles of $\Delta F_{\mathrm{we},\mathrm{est}}(c)$ and $\Delta F_{\mathrm{rob}}(c)$. The data give no information about $c$; the only information is the handout's bounds, which the actual robot satisfies:
-\begin{equation}\label{eq:turn-bounds}
-\norm{\vct{\phi}_k(c)}\leq\phi_{\max}\ (k=2,3,5,6),\qquad\norm{\vct{\alpha}_{\mathrm{we}}(c)}\leq0.01,\qquad\norm{\vct{\alpha}_{\mathrm{rob}}(c)}\leq\alpha^{\max}_{\mathrm{rob}} .
-\end{equation}
-The tilts of $\vct{d}_1$ and $\vct{d}_4$ are not listed because both nominal axes lie along $\vct{x}$, and a turn about $\vct{x}$ does not change their angle to $\vct{x}$. The values of $c$ that satisfy Eq.~\eqref{eq:turn-bounds} form an interval $[c_{\mathrm{lo}},c_{\mathrm{hi}}]$ that contains the actual value. We take its midpoint,
-\begin{equation}\label{eq:turn-choice}
-c_{\mathrm{est}}=\tfrac12\bigl(c_{\mathrm{lo}}+c_{\mathrm{hi}}\bigr),\qquad\bigl|c_{\mathrm{est}}-c^*\bigr|\leq\tfrac12\bigl(c_{\mathrm{hi}}-c_{\mathrm{lo}}\bigr),
-\end{equation}
-which gives the smallest worst-case error of $c$.
-
-By Eqs.~\eqref{eq:turn-insert} and \eqref{eq:turn-chain}, $c$ has the following effects:
-\begin{itemize}
-\item predicted poses in the tracker frame, $F_X\hat F_{\mathrm{ee}}(\vct{\theta})$, do not depend on $c$;
-\item the base-relative pose $\hat F_{\mathrm{ee}}(\vct{\theta})$ becomes $Q(-c)\hat F_{\mathrm{ee}}(\vct{\theta})$, and the individual tilts change with $c$;
-\item the angles between axes do not depend on $c$, since $\vct{d}'_i\cdot\vct{d}'_l=\vct{d}^*_i\cdot\vct{d}^*_l$; they are the quantities to compare with the ground truth.
-\end{itemize}
-
-\subsection{Improved kinematics}\label{sec:math-kinematics}
-\subsubsection{Forward kinematics}
-$\Fun{ImprovedFwdKins}(\vct{\theta})=\hat F_{\mathrm{ee}}(\vct{\theta})$ is Eq.~\eqref{eq:actual-fk} with the estimated parameters:
+This decomposition does not assert that either contribution vanishes. The travel discrepancy itself is
 \begin{equation*}
 \begin{aligned}
-\theta_{k,\mathrm{est}}&=\theta_k+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\theta_k),\\
-\vct{d}_{k,\mathrm{est}}&=R(\vct{\phi}_{k,\mathrm{est}})\vct{d}_k,\\
-F_{\mathrm{we},\mathrm{est}}&=F_{\mathrm{we}}\Delta F_{\mathrm{we},\mathrm{est}}.
+\Delta\theta_{k,j}^*-(\theta_{k,j}-\theta_{k,0})
+&=\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{k,j})
+-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{k,0})\\
+&\quad+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},j}
+-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},0}.
 \end{aligned}
 \end{equation*}
-The distortion estimate is evaluated by Eq.~\eqref{eq:distortion-interpolation}.
+With exactly collinear rotation vectors,
+\begin{equation*}
+\sum_jw_j(\theta_{k,j}-\theta_{k,0})\vct{v}_j
+=\vct{\ell}_k^*\sum_jw_j(\theta_{k,j}-\theta_{k,0})\Delta\theta_{k,j}^*.
+\end{equation*}
+Thus changing travel magnitudes alone leaves the normalized direction unchanged when the scalar sum is positive. With observation errors it changes the sample contributions.
 
-\subsubsection{Inverse kinematics}
-For a target $F$ relative to the base we need $\vct{\theta}$ with $\hat F_{\mathrm{ee}}(\vct{\theta})=F$, i.e.\ $\vct{g}(\vct{\theta})=\vct{0}$, where $\vct{g}=[\vct{\alpha};\vct{\epsilon}]$ of $\hat F_{\mathrm{ee}}(\vct{\theta})^{-1}F$. With tilted axes there is no direct formula, so we start from the nominal solution, $\vct{\theta}^{(0)}=\Fun{InvKins}(F)$, and correct it repeatedly (Newton's method):
-\begin{equation}\label{eq:ik-iter}
-\vct{\theta}^{(i+1)}=\vct{\theta}^{(i)}+J(\vct{\theta}^{(i)})^{-1}\vct{g}(\vct{\theta}^{(i)}),\qquad J=\partial\vct{g}/\partial\vct{\theta}.
-\end{equation}
-The start differs from the solution only by the calibration corrections, which are small (Table~\ref{tab:unknowns}), so a few steps suffice. Near $\cos\theta_5=0$, where the axes of joints 4 and 6 line up, $J$ is nearly singular and $\theta_4$, $\theta_6$ are poorly determined; limiting and damping the steps (Levenberg--Marquardt), as the provided \path{inv_kins} does, keeps the iteration stable there. Each of the two nominal wrist branches is refined, and the one within the joint limits nearest the current configuration is returned.
+The rotation-vector formula divides by $\sin\beta_j$. The implementation has a near-zero approximation but no dedicated near-$\pi$ case; the direction-only sample filter does not prove stability at $\pi$ or guarantee the correct physical angle branch. Without other errors, a wrong branch gives
+\begin{equation*}
+\Delta\theta_{k,j,\mathrm{est}}-\Delta\theta_{k,j}^*=2\pi m,\qquad
+m\in\mathbb Z\setminus\{0\}.
+\end{equation*}
+This is not a small-angle error.
+
+\paragraph{Step B.}
+The position-difference residual at the true stage direction separates as
+\begin{equation*}
+\begin{aligned}
+&\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,\mathrm{obs},0}
+-(\theta_{k,j}-\theta_{k,0})\vct{\ell}_k^*\\
+&\quad=\underbrace{\vct{p}_{m,j}^*-\vct{p}_{m,0}^*-\Delta\theta_{k,j}^*\vct{\ell}_k^*}_{\text{held-joint changes}}\\
+&\qquad+\underbrace{(\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,j}^*)
+-(\vct{p}_{m,\mathrm{obs},0}-\vct{p}_{m,0}^*)}_{\text{tracker errors}}\\
+&\qquad+\bigl[\Delta\theta_{k,j}^*-(\theta_{k,j}-\theta_{k,0})\bigr]\vct{\ell}_k^*.
+\end{aligned}
+\end{equation*}
+Using position differences avoids multiplying the reference position by an observed relative rotation. It does not remove actual held-wrist changes, which can move the tool origin.
+
+For the projected stage travel, adding and subtracting the physical single-axis displacement gives
+\begin{equation*}
+\begin{aligned}
+\Delta\theta_{k,j,\mathrm{est}}-\Delta\theta_{k,j}^*
+&=\Delta\theta_{k,j}^*(\vct{\ell}_{k,\mathrm{est}}^T\vct{\ell}_k^*-1)\\
+&\quad+\vct{\ell}_{k,\mathrm{est}}^T
+\bigl[\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,\mathrm{obs},0}-\Delta\theta_{k,j}^*\vct{\ell}_k^*\bigr].
+\end{aligned}
+\end{equation*}
+For both stages and wrists, distortion initialization then has the exact error
+\begin{equation*}
+\begin{aligned}
+y_{k,j}-\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys}}(\theta_{k,j})
+&=(\theta_{k,0,\mathrm{est}}-\theta_{k,0}^*)
++(\Delta\theta_{k,j,\mathrm{est}}-\Delta\theta_{k,j}^*)\\
+&\quad+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{rnd},j}.
+\end{aligned}
+\end{equation*}
+The joint fit replaces the encoder-travel approximation by the estimated distortion function, but it does not recover each random joint realization.
+
+\subsubsection{Wrist-center, tool and base initialization errors}
+The center fit uses $\vct{p}_{m,\mathrm{obs},j}-R_{m,\mathrm{obs},j}\vct{s}-\vct{o}$. At the true tool vector $\vct{s}$ and reference center $\vct{o}_w$,
+\begin{equation*}
+\begin{aligned}
+&\vct{p}_{m,\mathrm{obs},j}-R_{m,\mathrm{obs},j}\vct{s}-\vct{o}_w\\
+&\quad=\underbrace{R_X^*\sum_{i=1}^{3}(\theta_{i,j}^*-\theta_{i,0}^*)\vct{d}_i^*}_{\text{stage-induced wrist-center motion}}\\
+&\qquad+\underbrace{(\vct{p}_{m,\mathrm{obs},j}-\vct{p}_{m,j}^*)
+-(R_{m,\mathrm{obs},j}-R_{m,j}^*)\vct{s}}_{\text{tracker pose errors}}.
+\end{aligned}
+\end{equation*}
+Only stage changes move $\vct{o}_w$ in this spherical-wrist model. The center-fit coefficient matrix also contains uncertain $R_{m,\mathrm{obs},j}$; ordinary least squares treats that matrix as fixed.
+
+The true and initialized base positions satisfy
+\begin{equation*}
+\begin{aligned}
+\vct{p}_X^*&=\vct{o}_w-R_X^*\left(\sum_{i=1}^{3}\theta_{i,0}^*\vct{d}_i^*+\vct{p}_{\mathrm{cw}}\right),\\
+\vct{p}_{X,\mathrm{est}}&=\vct{o}_{w,\mathrm{est}}-R_{X,\mathrm{est}}
+\left(\sum_{i=1}^{3}\theta_{i,0,\mathrm{est}}\vct{d}_{i,\mathrm{est}}+\vct{p}_{\mathrm{cw}}\right).
+\end{aligned}
+\end{equation*}
+These equations retain center, rotation, reference-joint and internal-axis errors. The initial tool rotation additionally uses the shared reference rotation; tool translation uses the stacked center fit.
+
+\subsubsection{Averaging independent arrivals and retained errors}\label{sec:math-averaging-errors}
+\paragraph{Joint and tracker random errors.}
+Let $C_{\mathrm{joint},j}$ and $C_{\mathrm{tracker},j}$ be their first-order pose covariances at one arrival. For $n_j$ independent arrivals,
+\begin{equation*}
+C_{\mathrm{mean},j}\approx
+\frac{C_{\mathrm{joint},j}+C_{\mathrm{tracker},j}}{n_j}
++C_{\mathrm{shared},j}.
+\end{equation*}
+Thus revisits reduce both independent contributions. Shared-reference errors remain in $C_{\mathrm{shared},j}$; fixed tracker distortion and systematic joint distortion are biases, not terms divided by $n_j$.
+
+\paragraph{Effect of pose averaging on the objective.}
+For one reading per arrival, all observations at a command receive equal weight. Position averaging preserves the quadratic position objective up to a parameter-independent term:
+\begin{equation*}
+\begin{aligned}
+\sum_{q=1}^{n_j}\norm{\vct{p}_{m,\mathrm{obs},j}^{(q)}-\hat{\vct{p}}_{m,j}}^2
+&=n_j\norm{\vct{p}_{m,\mathrm{obs},j}-\hat{\vct{p}}_{m,j}}^2\\
+&\quad+\underbrace{\sum_{q=1}^{n_j}\norm{\vct{p}_{m,\mathrm{obs},j}^{(q)}-\vct{p}_{m,\mathrm{obs},j}}^2}_{\text{independent of the fitted parameters}}.
+\end{aligned}
+\end{equation*}
+For the rotation-vector residual $\vct{\alpha}_j^{(q)}(\vct{x})$ of an individual arrival, the corresponding identity does not hold in general:
+\begin{equation*}
+\sum_{q=1}^{n_j}\norm{\vct{\alpha}_j^{(q)}(\vct{x})}^2
+\not\equiv n_j\norm{\vct{\alpha}_j(\vct{x})}^2+\text{constant}.
+\end{equation*}
+The rotation average is exact for its coordinate-axis least-squares objective, but combining it with rotation-vector residuals in the joint fit is an approximation.
+
+\paragraph{Visit-count weights.}
+With $w_j=n_j$, the adopted residual weighting assumes
+\begin{equation*}
+C_{\mathrm{assumed},j}=\frac1{n_j}
+\begin{bmatrix}\sigma_R^2I&0\\0&\sigma_p^2I\end{bmatrix}.
+\end{equation*}
+The count reflects independent arrivals, but the two fixed scales still omit pose-dependent covariances, rotation--translation correlations and shared-reference uncertainty.
+
+\subsubsection{The base turn that tracker observations cannot determine}\label{sec:math-turn}
+The invariance $F_X\hat F_{\mathrm{ee}}=(F_XQ(c))(Q(-c)\hat F_{\mathrm{ee}})$ must be compatible with the robot chain, not merely with matrix multiplication. A rotation $Q(-c)$ about $\vct{e}_x$ commutes with the known translations $F_{\mathrm{cw}}$ and $F_{\mathrm{we}}$, both of which lie along $\vct{e}_x$. Moving it through each joint transform rotates the joint axis and leaves its angle unchanged:
+\begin{equation*}
+\begin{aligned}
+Q(-c)\Frame(I,\vct{p})
+&=\Frame(I,R(\vct{e}_x,-c)\vct{p})Q(-c),\\
+Q(-c)\Frame(R(\vct{d},\theta),\vct{0})
+&=\Frame(R(R(\vct{e}_x,-c)\vct{d},\theta),\vct{0})Q(-c).
+\end{aligned}
+\end{equation*}
+Applying these identities along the complete chain gives another model with
+\begin{equation*}
+\vct{d}'_k=R(\vct{e}_x,-c)\vct{d}_{k,\mathrm{est}},\qquad
+\Delta F'_{\mathrm{we}}=Q(-c)\Delta F_{\mathrm{we},\mathrm{est}},\qquad
+F'_X=F_{X,\mathrm{est}}Q(c).
+\end{equation*}
+The transformed model satisfies
+\begin{equation*}
+\vct{d}'_1=\vct{e}_x,\qquad
+\theta'_{k,j}=\theta_{k,j,\mathrm{est}},\qquad
+F'_X\hat F'_{\mathrm{ee}}=F_{X,\mathrm{est}}\hat F_{\mathrm{ee}},\qquad
+(\vct{d}'_i)^T\vct{d}'_k=\vct{d}_{i,\mathrm{est}}^T\vct{d}_{k,\mathrm{est}}.
+\end{equation*}
+Neither tracker observations nor homing distinguishes $c$. Bounds restrict it, but the noisy finite-grid accepted set need not contain the true turn; the fallback can still violate a bound.
+
+The two constraints serve different purposes:
+\begin{equation*}
+\begin{array}{ll}
+\vct{\phi}_2^T\vct{e}_x=0&\text{fixes a coordinate representative},\\
+\Delta\theta^{\mathrm{rob}}_{k,\mathrm{sys},\mathrm{est}}(\bar\theta_{\mathrm{encoders},k})=-\bar\theta_{\mathrm{encoders},k}
+&\text{constrains constant distortion shifts}.
+\end{array}
+\end{equation*}
+Neither removes finite-data uncertainty or proves full rank for a particular observation set.
+
+For the numerical rank check, use central differences with increments $10^{-4}$\,mm or $10^{-6}$\,rad. With singular values $s_a(J)$, the implementation reports
+\begin{equation*}
+\operatorname{rank}_{\mathrm{num}}J=\#\{a:s_a(J)>10^{-8}s_{\max}(J)\}.
+\end{equation*}
+Small singular values indicate weakly constrained parameter combinations. Inferred standard deviations remain conditional on the adopted weighting and local model.
+
+In particular,
+\begin{equation*}
+\hat F'_{\mathrm{ee}}=Q(-c)\hat F_{\mathrm{ee}}\ne\hat F_{\mathrm{ee}}
+\quad\text{while}\quad F'_X\hat F'_{\mathrm{ee}}=F_X\hat F_{\mathrm{ee}}.
+\end{equation*}
+A small tracker residual alone cannot certify base-relative forward accuracy.
+
+\subsubsection{What joint fitting can improve and what remains}
+The pose fit refines fixed geometry and selected distortion values. Random move realizations and tracker systematic distortion remain unmodeled; their effects can remain in residuals or be absorbed into fitted parameters.
+
+If the free-parameter Jacobian has full column rank, its local sensitivity satisfies
+\begin{equation*}
+\vct{\delta}\approx-J^{\dagger}\vct{r}(\vct{x}_{\mathrm{true}}),\qquad
+\norm{\vct{\delta}}\lesssim
+\frac{\norm{\vct{r}(\vct{x}_{\mathrm{true}})}}{s_{\min}(J)}.
+\end{equation*}
+Here $\vct{x}_{\mathrm{true}}$ must be representable in the chosen model, including its fixed home values; $s_{\min}$ is the smallest singular value. The relation is local and depends on parameter units.
+
+For selected-position spacing $h_k$, the noiseless piecewise-linear approximation has the conservative Lipschitz bound $\omega^{\mathrm{rob}}_{k,\mathrm{sys}}h_k/2$. With uncertain fitted endpoint values, a corresponding interval error bound includes
+\begin{equation*}
+\max\bigl(\text{absolute error at either endpoint}\bigr)
++\frac12\omega^{\mathrm{rob}}_{k,\mathrm{sys}}h_k.
+\end{equation*}
+After relocating the home selected position, use
+\begin{equation*}
+h_k=\max_l\bigl(\theta_k^{(l+1)}-\theta_k^{(l)}\bigr).
+\end{equation*}
+Smaller $h_k$ reduces the interpolation term, not endpoint uncertainty. The bound does not cover extrapolation; additional free values require additional independent constraints.
+
+Verify final forward and inverse errors on independent workspace configurations. Ground truth is used only for validation and parameter comparison.
+
 \end{document}

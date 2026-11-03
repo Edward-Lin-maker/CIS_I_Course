@@ -200,3 +200,16 @@ Agreed details for later phases. Copy the relevant part into AGENTS.md §6 when 
   - AGENTS.md: section 6: added TBD line for this commit
   - docs/progress_log.md: added this block
 - Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/02_variables.tex, report/sections/03_mathematical_approach.tex
+
+
+### TBD | 2026-11-03 02:26 | "Phase 3: complete calibration theory and error analysis" | not pushed
+- Agent: Codex (model not exposed)
+- Changes:
+  - Complete the user-reviewed mathematical approach and mark Phase 3 finished; Phase 4 is next.
+  - Organize the calibration pipeline separately from error analysis, with weighted single-joint initialization, reference-joint and home-distortion estimates, joint center/tool fitting, full-pose refinement, base-turn selection, and forward/inverse evaluation.
+  - Require separated repeated arrivals, distinguish the two SVD operations, and retain numerical filters, weighting assumptions, solver settings, and convergence limitations.
+  - Derive the tetrahedral marker layout and registration-noise scales using the simplified A1 linearization.
+  - Adopt the observation-based base correction reference suggested by the course template, distinguish it from nominal placement, and synchronize the notation reference.
+  - Clarify true, observed and estimated quantities; distinguish coordinate unit vectors from joint axes; remove unnecessary auxiliary notation and repeated prose.
+- Validation: the mathematical chapter compiles without warnings; the full report compiles with pre-existing bibliography underfull-box and duplicate page-anchor warnings; git diff --check passes. No student-code changes or calibration-performance runs.
+- Files: AGENTS.md, docs/course_reference.md, docs/progress_log.md, report/sections/03_mathematical_approach.tex

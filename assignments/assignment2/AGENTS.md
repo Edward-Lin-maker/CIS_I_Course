@@ -75,21 +75,18 @@ assignment2/
 - [x] Phase 0 Setup（文件结构、reference、规则、日志流程）
 - [x] Phase 1 Line-by-line reading（Seg 1–6）
 - [x] Phase 2 Variable table（`report/sections/02_variables.tex`；结论见 course_reference Part 3.4）
-- [ ] **Phase 3 Theory**（当前阶段）→ `report/sections/03_mathematical_approach.tex`
-- [ ] Phase 4 Design & code（src/student/、unit tests）
+- [x] Phase 3 Theory→ `report/sections/03_mathematical_approach.tex`
+- [ ] **Phase 4 Design & code**（当前阶段；src/student/、unit tests）
 - [ ] Phase 5 Results & report（多 seed 结果表、其余章节）
 
-### Current phase commits（Phase 3；阶段完成后压缩进下方一行）
-- c0c22e1 | 10-25 | Reference: resolve tentative handout corrections in Part 3.2
-- 51e03b2 | 10-26 | Phase 3: Mathematical Approach draft (error model, gauges, spacing, budget, IK)
-- daa6f9c | 10-31 | Phase 3: rewrite Section 3 (frames, least squares, starting values, identifiability); notation cleanup
-- 1982fbf | 11-01 | Phase 3: clarify single-joint calibration derivations and notation
-- e0f1083 | 11-02 | Phase 3: base parameters relative to the nominal base F_X
+### Current phase commits（Phase 4）
+- None yet.
 
 ### Completed phases
 - Phase 0 Setup | 2026-10-20 ~ 10-23 | Claude (desktop app, Opus 5.5) | commits: 91ab914
 - Phase 1 Line-by-line reading | 2026-10-23 ~ 10-25 | Claude Code / Claude desktop (Opus 5.5) | commits: dcf54bf, cd9aad0, fb2aed1, fddae14, 57a2718, dc3ef9b, 7c01a97
 - Phase 2 Variable table | 2026-10-25 | Claude Code (Opus 5.5) | commits: 1d78b39, 037ed94
+- Phase 3 Theory | 2026-10-25 ~ 2026-11-03 | Claude / Codex | commits: c0c22e1, 51e03b2, daa6f9c, 1982fbf, e0f1083, TBD
 
 ## 7. 其他
 - 命名：全小写、下划线分隔，不用空格和中文。
