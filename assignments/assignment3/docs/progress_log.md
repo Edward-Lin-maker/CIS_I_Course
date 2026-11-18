@@ -17,3 +17,12 @@ Changes:
 - Remove residual A2 build/cache files and the clean auxiliary worktree; preserve the existing A2 branches and remote history.
 
 Files: AGENTS.md, CLAUDE.md, .gitignore, docs/, report/main.tex, report/sections/, report/figures/.gitkeep.
+
+### TBD | 2026-11-18 12:55 | "docs: add workspace guide and clarify design requirements" | not pushed
+Agent: Codex
+
+Changes:
+- Add a teammate workspace guide describing file ownership, differences from course main, report structure and assistant workflow.
+- Separate explicit A3 design requirements from A1-informed presentation suggestions; update the rule-file navigation and wording.
+
+Files: docs/workspace_guide.md, docs/report_guidelines.md, AGENTS.md, docs/progress_log.md.

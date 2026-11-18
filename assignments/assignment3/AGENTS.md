@@ -25,6 +25,7 @@
 - 发现疑似笔误：先在对话指出原文、来源与建议，确认后才登记正式更正；Part 4.4 可先记录未解决的来源差异。
 - 阶段澄清经用户确认后记 Part 4.6，先依据后结论，不记猜测或显而易见内容。
 - 先查 `docs/course_reference.md`；只读当前所需章节。A1 完整格式参考为 `docs/a1_report.tex`；A2 蒸馏见 Part 3，完整内容保留在 assignment2 分支。
+- 团队目录说明和与课程 main 的差异见 `docs/workspace_guide.md`；安装运行仍以原 README 为入口。
 - A3 文件索引：`src/mesh.py`、`src/session.py`、`src/student/{closest_point,icp,uncertainty,workflow,report}.py`，`notebooks/assignment3_template.ipynb`，`tests/`，`data/`，`docs/`，`report/`。
 
 ## 4. 代码、来源与验证
@@ -37,7 +38,7 @@
 - 远程课程仓库只在用户明确要求时查询；不得发送消息或提交服务器任务，除非当前任务授权。
 
 ## 5. Report 与 rubric
-- 遵守 `docs/report_guidelines.md`。关键项：可独立理解的目标/指标/人体工学；有尺寸和坐标的设计图/表及理由；定义变量、推导公式、就近引用讲义/来源；算法输入输出、伪代码、边界/停止条件；数据和控制流程图或调用树；各主要模块及整体的验证证据；达标对照及未达标解释。
+- 遵守 `docs/report_guidelines.md`。关键项：可独立理解的目标/指标/人体工学；适当的设计草图、定量表格及理由（尺寸/坐标标注按表达需要，是建议而非额外题目硬指标）；定义变量、推导公式、就近引用讲义/来源；算法输入输出、伪代码、边界/停止条件；数据和控制流程图或调用树；各主要模块及整体的验证证据；达标对照及未达标解释。
 - A3 专项：patch IDs/counts、valid/outlier samples、残差 mean/std/max/p90、FRE 与 TRE 区别、模拟/真实时间。不能把小残差当作真实 TRE 保证。
 - 公式要注明来源；原创推导明确标注其起点和推导。不能虚构引用、页码或实验。
 - AI 使用、外部代码来源、prompts/用途及时记 `docs/ai_assistance.md`；最终写入 AI/tools 章节。署名、JHED ID、贡献和双方签名提交前核实；新作业不能复用旧签名。
@@ -64,3 +65,4 @@
 
 ### Current phase commits
 - fb6ca0f | 2026-11-18 | Setup: initialize Assignment 3 references and report skeleton
+- TBD | 2026-11-18 | docs: add workspace guide and clarify design requirements
