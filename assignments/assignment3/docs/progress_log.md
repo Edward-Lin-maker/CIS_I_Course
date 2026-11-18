@@ -18,7 +18,7 @@ Changes:
 
 Files: AGENTS.md, CLAUDE.md, .gitignore, docs/, report/main.tex, report/sections/, report/figures/.gitkeep.
 
-### TBD | 2026-11-18 12:55 | "docs: add workspace guide and clarify design requirements" | not pushed
+### 6ee2f0a | 2026-11-18 12:55 | "docs: add workspace guide and clarify design requirements" | pushed
 Agent: Codex
 
 Changes:

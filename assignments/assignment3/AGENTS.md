@@ -65,4 +65,4 @@
 
 ### Current phase commits
 - fb6ca0f | 2026-11-18 | Setup: initialize Assignment 3 references and report skeleton
-- TBD | 2026-11-18 | docs: add workspace guide and clarify design requirements
+- 6ee2f0a | 2026-11-18 | docs: add workspace guide and clarify design requirements
