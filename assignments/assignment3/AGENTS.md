@@ -63,4 +63,4 @@
 - [ ] Phase 4: validation, results and final report.
 
 ### Current phase commits
-- TBD | 2026-11-18 | Setup: initialize Assignment 3 references and report skeleton
+- fb6ca0f | 2026-11-18 | Setup: initialize Assignment 3 references and report skeleton
