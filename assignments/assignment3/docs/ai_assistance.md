@@ -11,5 +11,11 @@
 - Work: remove local A2 build/cache artifacts and its clean auxiliary worktree, verify A2 matches main, and publish only the A3 setup files with a separate hash-completion commit.
 - Verification: confirm existing A2 branch references, migrated A3 sources and clean tracked changes before committing.
 
+## 2026-11-18 - Assignment 3 code implementation
+- Tool: Claude Code (Claude Opus 5.5) desktop assistant.
+- User prompt (English translation): "This file is the project you need to complete (2026_assignment_3.pdf); this folder (rob) is reference for writing the report; the CIS_I_Course-assignment3 folder contains my previous assignments and what has to be written this time. Analyse and derive rigorously, first complete the code work fully, implementing everything required in as3; and tell me in detail what operations you did and what results you got."
+- Work: implemented src/student/{geometry,design,closest_point,icp,uncertainty,workflow}.py, completed and extended tests, wrote a validation-only offline simulator (validation/) because the assistant was not permitted to contact the course server, ran 50-seed experiments and executed the notebook with the offline backend.
+- Human verification required: run the notebook against the course server (SESSION_BACKEND="remote"), review design choices and all derivations before using them in the report.
+
 ## Ongoing disclosure
 For every subsequent substantive use, record date, tool, prompts or a faithful prompt description/translation, affected work, and human verification. Before submission, use this record to write the report's AI/tools section and supply prompt details required by the handout. This record is not a substitute for the final disclosure.
