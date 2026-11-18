@@ -1,0 +1,82 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,bm}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,longtable,array}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[superscript]{cite}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+\usepackage{subfiles}
+\usepackage{tocloft}
+\newcommand{\vct}[1]{\bm{#1}}
+\newcommand{\sk}{\operatorname{sk}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\Frame}{\operatorname{Frame}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\Fun}[1]{\operatorname{#1}}
+\newcommand{\norm}[1]{\left\|#1\right\|_2}
+% Code names break only after separators.
+\DeclareUrlCommand\fn{\urlstyle{tt}\def\UrlBreaks{\do\_\do\.\do\/\do\,}\def\UrlBigBreaks{}}
+\setcounter{tocdepth}{2}
+\cftpagenumbersoff{section}
+\cftpagenumbersoff{subsection}
+\cftpagenumbersoff{subsubsection}
+\graphicspath{{figures/}{../figures/}}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+{\LARGE\bfseries CIS I Assignment 3\\[0.4cm]
+Surface Registration with a Tracked Pointer\par}
+\vspace{1.5cm}
+{\large Fall 2026\par}
+\vfill
+% Confirm team information and obtain fresh signatures before submission.
+\begin{tabular}{p{0.28\textwidth}p{0.55\textwidth}}
+Team member name(s): & Zepei Lin, Yue Ge \\[0.8cm]
+Student ID(s): & 3323BF, 7A3BD5 \\[0.8cm]
+Contact information: & \texttt{zlin97@jh.edu}, \texttt{yge29@jh.edu}
+\end{tabular}
+\vfill
+\noindent\fbox{\parbox{0.86\textwidth}{
+\textbf{Academic-integrity statement}\par\medskip
+I (we) have followed the rules in completing this assignment.\par\vspace{1.2cm}
+Signature(s): \hrulefill
+}}
+\vfill
+\end{titlepage}
+\hypersetup{pageanchor=true}
+
+\tableofcontents
+\clearpage
+
+\subfile{sections/01_introduction}
+\subfile{sections/02_variables}
+\subfile{sections/03_mathematical_approach}
+\subfile{sections/04_algorithmic_approach}
+\subfile{sections/05_program_structure}
+\subfile{sections/06_validation}
+\subfile{sections/07_results}
+\subfile{sections/08_ai_assistance}
+\subfile{sections/09_contributions}
+
+\clearpage
+\begingroup
+\raggedright
+\begin{thebibliography}{99}
+\bibitem{assignment} R. H. Taylor, \emph{Assignment 3 -- CIS I (601.455/655), Fall 2026}, October 26, 2026, \texttt{2026\_assignment\_3.pdf}.
+\bibitem{repo} LCSR-CIIS, \emph{CIS I Course repository}.
+\url{https://github.com/LCSR-CIIS/CIS_I_Course}.
+\end{thebibliography}
+\endgroup
+\end{document}
